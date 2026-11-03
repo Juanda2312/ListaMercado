@@ -9,6 +9,7 @@ import 'package:lista_mercado/screens/product_form_screen.dart';
 import 'package:lista_mercado/screens/products_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lista_mercado/widgets/empty_state.dart';
 
 Future<AppProviders> _pump(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({});
@@ -113,11 +114,61 @@ void main() {
       expect(find.text('Café'), findsNothing);
     });
 
-    testWidgets('subtitle shows supermarket and price only when they exist', (
+    testWidgets('shows the supermarket as a chip and the price only when they '
+        'exist', (tester) async {
+      final app = await _pump(tester);
+      expect(find.widgetWithText(Chip, 'Ara'), findsOneWidget);
+      expect(find.text('\$4.000'), findsOneWidget);
+
+      final pan = find.byKey(Key('product-tile-${_idOf(app, 'Pan')}'));
+      expect(
+        find.descendant(of: pan, matching: find.byType(Chip)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: pan, matching: find.textContaining('\$')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('empty states show an icon and keep their text', (
       tester,
     ) async {
-      await _pump(tester);
-      expect(find.text('Ara · \$4.000'), findsOneWidget);
+      final app = await _pump(tester);
+      await tester.enterText(find.byKey(const Key('product-search')), 'zzz');
+      await tester.pumpAndSettle();
+      expect(find.text('Sin resultados'), findsOneWidget);
+      expect(find.byType(EmptyState), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('product-search')), '');
+      for (final p in [...app.products.products]) {
+        await app.products.remove(p.id);
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('Aún no hay productos'), findsOneWidget);
+      expect(find.byType(EmptyState), findsOneWidget);
+    });
+
+    testWidgets('product card does not overflow with a very long name at '
+        '360×640', (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final app = await _pump(tester);
+      await app.supermarkets.add('Supermercado con un nombre larguísimo ' * 2);
+      final s = app.supermarkets.supermarkets.firstWhere(
+        (x) => x.name.startsWith('Supermercado'),
+      );
+      await app.products.add(
+        name: 'Queso campesino semidescremado extra largo ' * 3,
+        supermarketId: s.id,
+        price: 123456789,
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
     });
   });
 

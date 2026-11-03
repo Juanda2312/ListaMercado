@@ -12,8 +12,9 @@ App Android 100% local para organizar las compras del mercado: gestiona producto
   - Cambiar cantidades, limpiar la lista y quitar un producto deslizando la fila (con opción de deshacer).
   - Si un supermercado tiene productos sin precio, su total se muestra como `$X + (?)`.
   - Añadir un producto que ya está en la lista pide confirmación antes de sumar la cantidad.
-  - **Total y presupuesto (v1.0.1):** la barra superior muestra el total general de la lista (`$X + (?)` si hay productos sin precio). Con el icono de cartera se fija un presupuesto opcional y la barra muestra el restante (presupuesto − total), como `$RESTANTE - (?)` si hay productos sin precio. El restante se ve en verde si es positivo o cero y en rojo si es negativo. El presupuesto se conserva al limpiar la lista y se puede cambiar o quitar cuando se quiera.
+  - **Total y presupuesto (v1.0.1):** el resumen superior muestra el total general de la lista (`$X + (?)` si hay productos sin precio). Con el icono de cartera se fija un presupuesto opcional y el resumen muestra el restante (presupuesto − total), como `$RESTANTE - (?)` si hay productos sin precio. El restante se ve en verde si es positivo o cero y en rojo si es negativo. El presupuesto se conserva al limpiar la lista y se puede cambiar o quitar cuando se quiera.
   - **Descuento / precio temporal (v1.0.2):** al añadir un producto a la lista puedes indicar, opcionalmente, un descuento como porcentaje o como precio final; al llenar uno, el otro se calcula solo. Si el producto no tiene precio, solo se puede indicar el precio final. El precio temporal aplica únicamente a ese producto en la lista (no cambia el precio del catálogo) y se puede añadir, modificar o quitar después desde la lista de mercado, en ambas vistas. Los totales y el presupuesto usan el precio con descuento.
+- **Diseño (v1.0.3):** tema claro u oscuro según el sistema, tarjetas que se adaptan al ancho de la pantalla (vertical y horizontal), resumen de total y presupuesto con barra de progreso (verde dentro del presupuesto, roja al superarlo) y estados vacíos con ícono. La funcionalidad no cambia.
 
 ## Descargar e instalar
 
@@ -23,7 +24,7 @@ Cada versión nueva se instala encima de la anterior y conserva los datos, siemp
 
 ## Tecnología
 
-- Flutter (Dart con null safety), solo Android.
+- Flutter (Dart con null safety), solo Android, con Material 3 y un tema propio claro y oscuro.
 - Estado con `provider`; persistencia con `shared_preferences` (JSON).
 - Sin otras dependencias de producción.
 - Dev dependency: `flutter_launcher_icons`, solo para generar el ícono (`dart run flutter_launcher_icons`). No entra en el APK.
@@ -39,7 +40,7 @@ lib/
 ├── logic/       # búsqueda, agrupación y totales (funciones puras)
 ├── utils/       # parseo/formato de precios, cálculo de descuentos, normalización de texto
 ├── screens/     # Productos, formulario, Supermercados, Lista
-└── widgets/     # diálogo de confirmación, selector de cantidad, campos de descuento, vistas de lista y tabla
+└── widgets/     # diálogo de confirmación, selector de cantidad, campos de descuento, resumen de presupuesto, estados vacíos, vistas de lista y tabla
 assets/icon/     # imágenes fuente del ícono de la app
 test/            # espejo de lib/
 ```
@@ -57,7 +58,7 @@ flutter test
 
 ## Generar el APK release
 
-Antes de compilar una versión nueva, sube el número en `pubspec.yaml` (por ejemplo `1.0.2+3`). El número tras el `+` debe ser siempre mayor que el anterior, o Android rechazará la actualización.
+Antes de compilar una versión nueva, sube el número en `pubspec.yaml` (por ejemplo `1.0.3+4`). El número tras el `+` debe ser siempre mayor que el anterior, o Android rechazará la actualización.
 
 El APK se firma con un keystore propio que **no** está en el repositorio.
 
@@ -94,7 +95,7 @@ El APK se firma con un keystore propio que **no** está en el repositorio.
 
    Si ya hay una versión instalada con otra firma (por ejemplo, una debug), desinstálala antes con `adb uninstall com.listamercado.lista_mercado`.
 
-5. Para publicar, copia el APK como `ListaMercado.apk` y adjúntalo a un nuevo [release](../../releases/new) con una etiqueta como `v1.0.2`.
+5. Para publicar, copia el APK como `ListaMercado.apk` y adjúntalo a un nuevo [release](../../releases/new) con una etiqueta como `v1.0.3`.
 
 > Guarda una copia del `.jks` y de su contraseña en un lugar seguro. Si se pierden, no se podrá actualizar la app instalada sin desinstalarla (y se borran sus datos locales).
 

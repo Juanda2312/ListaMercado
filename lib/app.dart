@@ -7,6 +7,32 @@ import 'providers/shopping_list_provider.dart';
 import 'providers/supermarkets_provider.dart';
 import 'screens/home_shell.dart';
 
+ThemeData _buildTheme(Brightness brightness) {
+  final scheme = ColorScheme.fromSeed(
+    seedColor: const Color(0xFF2E7D32),
+    brightness: brightness,
+  );
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    cardTheme: CardThemeData(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+    ),
+    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+    appBarTheme: const AppBarTheme(scrolledUnderElevation: 0),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: scheme.surfaceContainer,
+    ),
+  );
+}
+
 class ListaMercadoApp extends StatelessWidget {
   const ListaMercadoApp({super.key, required this.providers});
 
@@ -29,7 +55,9 @@ class ListaMercadoApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Lista Mercado',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(colorSchemeSeed: Colors.green, useMaterial3: true),
+        theme: _buildTheme(Brightness.light),
+        darkTheme: _buildTheme(Brightness.dark),
+        themeMode: ThemeMode.system,
         home: const HomeShell(),
       ),
     );

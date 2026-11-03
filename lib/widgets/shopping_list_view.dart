@@ -30,10 +30,17 @@ class ShoppingListView extends StatelessWidget {
           key: Key('dismiss-${row.product.id}'),
           direction: DismissDirection.endToStart,
           background: Container(
-            color: Colors.red,
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.error,
+              borderRadius: BorderRadius.circular(20),
+            ),
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 24),
-            child: const Icon(Icons.delete, color: Colors.white),
+            child: Icon(
+              Icons.delete,
+              color: Theme.of(context).colorScheme.onError,
+            ),
           ),
           onDismissed: (_) => _remove(context, row),
           child: _ListRowTile(
@@ -88,35 +95,55 @@ class _ListRowTile extends StatelessWidget {
 
     return Card(
       key: Key('list-row-${product.id}'),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         onTap: () =>
             context.read<ShoppingListProvider>().toggleChecked(product.id),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 4, 8),
+          padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      product.name,
-                      key: Key('row-name-${product.id}'),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        decoration: checked
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                        color: checked ? muted : null,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.name,
+                            key: Key('row-name-${product.id}'),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              decoration: checked
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              color: checked ? muted : null,
+                            ),
+                          ),
+                          Text(
+                            supermarketName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: checked
+                                  ? muted
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   IconButton(
                     key: Key('edit-discount-${product.id}'),
                     tooltip: 'Descuento',
+                    visualDensity: VisualDensity.compact,
                     icon: Icon(
                       Icons.sell_outlined,
                       color: row.hasDiscount ? theme.colorScheme.primary : null,
@@ -126,6 +153,7 @@ class _ListRowTile extends StatelessWidget {
                   IconButton(
                     key: Key('edit-product-${product.id}'),
                     tooltip: 'Editar producto',
+                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.edit_outlined),
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -136,15 +164,6 @@ class _ListRowTile extends StatelessWidget {
                   ),
                 ],
               ),
-              Text(
-                supermarketName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: checked ? muted : theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 4),
               Row(
                 children: [
                   QuantityStepper(
@@ -155,57 +174,60 @@ class _ListRowTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text.rich(
-                          key: Key('row-unit-${product.id}'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          TextSpan(
-                            style: theme.textTheme.bodySmall?.copyWith(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text.rich(
+                            key: Key('row-unit-${product.id}'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            TextSpan(
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: checked ? muted : null,
+                              ),
+                              children: [
+                                const TextSpan(text: 'c/u '),
+                                if (row.hasDiscount && base != null) ...[
+                                  TextSpan(
+                                    text: formatPrice(base),
+                                    style: const TextStyle(
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' '),
+                                ],
+                                TextSpan(
+                                  text: unit == null ? '—' : formatPrice(unit),
+                                ),
+                                if (percent != null)
+                                  TextSpan(
+                                    text: ' -${formatPercent(percent)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: checked
+                                          ? null
+                                          : theme.colorScheme.primary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            total == null ? '—' : formatPrice(total),
+                            key: Key('row-total-${product.id}'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
                               color: checked ? muted : null,
                             ),
-                            children: [
-                              const TextSpan(text: 'c/u '),
-                              if (row.hasDiscount && base != null) ...[
-                                TextSpan(
-                                  text: formatPrice(base),
-                                  style: const TextStyle(
-                                    decoration: TextDecoration.lineThrough,
-                                  ),
-                                ),
-                                const TextSpan(text: ' '),
-                              ],
-                              TextSpan(
-                                text: unit == null ? '—' : formatPrice(unit),
-                              ),
-                              if (percent != null)
-                                TextSpan(
-                                  text: ' -${formatPercent(percent)}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: checked
-                                        ? null
-                                        : theme.colorScheme.primary,
-                                  ),
-                                ),
-                            ],
                           ),
-                        ),
-                        Text(
-                          total == null ? '—' : formatPrice(total),
-                          key: Key('row-total-${product.id}'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: checked ? muted : null,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
                 ],
               ),
             ],
