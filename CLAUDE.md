@@ -20,26 +20,29 @@
 - Tachar es solo un indicador visual: los productos tachados **siguen sumando** en los totales.
 - Todo "tachar" es reversible (tacha y destacha).
 - Acciones masivas (tachar todos, tachar los de un supermercado, limpiar lista) piden confirmación.
+- Añadir a la lista un producto que **ya está en ella** pide confirmación antes de sumar la cantidad.
 - Total por supermercado: los productos sin precio no suman; si hay alguno, el total se muestra como `TOTAL + (?)`.
 - Productos sin supermercado van a la columna **Otros**.
 - Cada supermercado es una **columna** de la tabla de la lista.
 
 ## Requisitos (resumen del MVP)
 
-**P1 – Productos:** pantalla con nombre, supermercado y precio. Añadir, modificar, eliminar, buscar (con filtro por supermercado) y añadir a la lista con cantidad.
+**P1 – Productos:** pantalla con nombre, supermercado y precio. Añadir, modificar, eliminar, buscar (con filtro por supermercado) y añadir a la lista con cantidad (si el producto ya está en la lista, pide confirmación para sumar).
 **P2 – Supermercados:** pantalla con solo el nombre. Añadir, modificar, eliminar.
-**P3 – Lista de mercado:** lista (nombre, supermercado, cantidad, precio unitario, total) y tabla por supermercados (columna Otros). Modificar cantidad; tachar/destachar un producto (sincronizado entre lista y tabla); tachar/destachar todos los de un supermercado; tachar/destachar todos; limpiar la lista; botón en cada producto que abre su edición (acceso directo a P1).
+**P3 – Lista de mercado:** lista (nombre, supermercado, cantidad, precio unitario, total) y tabla por supermercados (columna Otros). Modificar cantidad; tachar/destachar un producto (sincronizado entre lista y tabla); tachar/destachar todos los de un supermercado; tachar/destachar todos; limpiar la lista; quitar un solo producto de la lista (deslizando la fila, con opción de deshacer); botón en cada producto que abre su edición (acceso directo a P1).
 
 ## Decisiones de diseño (cerradas)
 
-- **Un producto aparece una sola vez en la lista.** Añadirlo de nuevo suma la cantidad. Por eso `ShoppingItem` se identifica por `productId` (sin id propio).
+- **Un producto aparece una sola vez en la lista.** Añadirlo de nuevo suma la cantidad, **previa confirmación del usuario** (el diálogo muestra la cantidad actual y el total resultante). Por eso `ShoppingItem` se identifica por `productId` (sin id propio).
+- **La confirmación vive en la UI, no en el provider.** `ShoppingListProvider.addProduct` siempre suma; es la pantalla de productos la que consulta `quantityOf` y decide si pregunta antes de llamarlo.
 - **El precio vive solo en `Product`.** La lista lee el precio vigente del producto; no se guarda copia en la lista.
 - **Eliminar un producto** lo quita también de la lista. **Eliminar un supermercado** NO borra productos: pasan a "sin supermercado" (columna Otros).
+- **Quitar un producto de la lista** (deslizar la fila) solo lo saca de la lista: el producto sigue existiendo en P1. No pide confirmación previa, pero muestra un `SnackBar` con "Deshacer" que lo restaura con su cantidad y estado de tachado originales.
 - **Acciones masivas de tachado alternan:** si todos los del alcance ya están tachados, los destacha; si no, los tacha todos.
 - **Nombres de supermercado únicos** (sin distinguir mayúsculas ni tildes). Nombres de producto pueden repetirse (misma "Leche" en dos supermercados).
 - **Cantidad mínima 1**, entera. Al estar en 1, el botón "−" no hace nada.
 - **Precio:** vacío = sin precio; debe ser > 0. Acepta `,` o `.` como decimal; un punto seguido de exactamente 3 dígitos (`12.500`) se interpreta como separador de miles. Se muestra como `$12.500` (miles con punto, decimales con coma solo si los hay, máximo 2).
-- **La tabla de P3** es un conjunto de columnas con scroll horizontal (una por supermercado con productos, `Otros` al final). Lista y tabla son dos pestañas internas de P3 que leen el mismo `ShoppingListProvider`, por eso el tachado se sincroniza solo.
+- **La tabla de P3** es un conjunto de columnas con scroll horizontal (una por supermercado con productos, `Otros` al final). Lista y tabla son dos pestañas internas de P3 que leen el mismo `ShoppingListProvider`, por eso el tachado y la eliminación se sincronizan solos.
 - **IDs:** `DateTime.now().microsecondsSinceEpoch.toString()`.
 
 ## Arquitectura
@@ -91,7 +94,7 @@ lib/
 └── widgets/
     ├── confirm_dialog.dart
     ├── quantity_stepper.dart
-    ├── shopping_list_view.dart       # pestaña "Lista"
+    ├── shopping_list_view.dart       # pestaña "Lista" (con deslizar para quitar)
     └── shopping_table_view.dart      # pestaña "Por supermercado" (columnas)
 
 test/                                 # espejo de lib/: models_test, local_storage_test, price_format_test,
@@ -107,7 +110,8 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 2. **Precio mal escrito:** `1,5`, `12.500`, `-3`, `0`, `abc`, vacío → interpretados según las decisiones de diseño; inválidos muestran error en el formulario. (Tarea 3 y 8)
 3. **Eliminaciones en cascada:** borrar un producto que está en la lista lo quita de la lista; borrar un supermercado con productos los manda a Otros sin perderlos. (Tareas 4, 5 y 7)
 4. **Almacenamiento vacío o corrupto** (primer arranque, JSON dañado, ítem de lista cuyo producto ya no existe) → la app abre con datos vacíos o salta el elemento dañado, sin crashear. (Tareas 2 y 6)
-5. **Añadir dos veces el mismo producto a la lista** → una sola fila con cantidades sumadas, nunca duplicados. (Tarea 5)
+5. **Añadir dos veces el mismo producto a la lista** → una sola fila con cantidades sumadas, nunca duplicados; la segunda vez pide confirmación y, si se cancela, la cantidad existente no cambia. (Tareas 5 y 8)
+6. **Quitar un producto de la lista** no borra el producto del catálogo, actualiza totales y tabla, y "Deshacer" lo restaura con su cantidad y tachado originales, sin duplicar si el producto fue añadido de nuevo entre tanto. (Tareas 5 y 9)
 
 ---
 
@@ -241,19 +245,24 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 
 **Interfaces:**
 - Consume: `LocalStorage`, `ShoppingItem`.
-- Produce: `class ShoppingListProvider extends ChangeNotifier { ShoppingListProvider({required LocalStorage storage}); List<ShoppingItem> get items; Future<void> addProduct(String productId, int quantity); Future<void> setQuantity(String productId, int quantity); Future<void> toggleChecked(String productId); Future<void> toggleCheckedFor(Iterable<String> productIds); Future<void> removeProduct(String productId); Future<void> clear(); }`
-  - `addProduct`: si ya existe, suma cantidades; `quantity < 1` se trata como 1.
+- Produce: `class ShoppingListProvider extends ChangeNotifier { ShoppingListProvider({required LocalStorage storage}); List<ShoppingItem> get items; int? quantityOf(String productId); bool contains(String productId); Future<void> addProduct(String productId, int quantity); Future<void> setQuantity(String productId, int quantity); Future<void> toggleChecked(String productId); Future<void> toggleCheckedFor(Iterable<String> productIds); Future<void> removeProduct(String productId); Future<void> restoreItem(ShoppingItem item); Future<void> clear(); }`
+  - `quantityOf`: cantidad actual del producto en la lista, o `null` si no está. `contains`: `quantityOf(productId) != null`. Son de solo lectura y no notifican; la UI los usa para decidir si pide confirmación antes de sumar.
+  - `addProduct`: si ya existe, suma cantidades; `quantity < 1` se trata como 1. **Siempre suma sin preguntar:** la confirmación es responsabilidad de la UI (Tarea 8).
   - `setQuantity`: mínimo 1; ignora ids que no están en la lista.
   - `toggleCheckedFor`: considera solo los ids presentes en la lista; si todos están tachados los destacha, si no los tacha todos.
+  - `removeProduct`: quita solo ese ítem; si el id no está en la lista, no hace nada (ni notifica). Lo usan la cascada de eliminación de productos y el deslizar-para-quitar de P3.
+  - `restoreItem`: reinserta un `ShoppingItem` tal cual (cantidad y `checked` originales), para "Deshacer". Si ya hay un ítem con ese `productId`, no hace nada (nunca duplica).
 
 - [ ] **Paso 1: Test que falla:**
   - `addProduct twice sums quantities into one item` (2 + 3 → un ítem con 5). **(RF5)**
   - `addProduct with quantity 0 stores 1`.
+  - `quantityOf returns null when absent and the current quantity when present`; `contains reflects membership`. **(RF5)**
   - `setQuantity(0) clamps to 1`; `setQuantity on unknown id does nothing`.
   - `toggleChecked twice returns to unchecked`; `checked keeps quantity`.
   - `toggleCheckedFor with mixed state checks all; second call unchecks all`.
   - `toggleCheckedFor ignores ids not in the list`.
-  - `removeProduct removes only that item` **(RF3)**; `clear empties the list`.
+  - `removeProduct removes only that item` **(RF3, RF6)**; `removeProduct on unknown id does nothing and does not notify` **(RF6)**; `clear empties the list`.
+  - `restoreItem re-adds an item with its original quantity and checked state` **(RF6)**; `restoreItem does nothing if the product is already in the list` **(RF6)**.
   - `state persists across instances`.
 - [ ] **Paso 2:** `flutter test test/providers_test.dart` → FALLA en el grupo nuevo.
 - [ ] **Paso 3:** Implementar `ShoppingListProvider`.
@@ -327,25 +336,35 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 - Test: `test/products_screen_test.dart`, `test/product_form_screen_test.dart`
 
 **Interfaces:**
-- Consume: `ProductsProvider`, `SupermarketsProvider`, `ShoppingListProvider`, `searchProducts`, `kNoSupermarketFilter`, `validatePriceInput`, `parsePrice`, `formatPrice`, `confirmDialog`.
+- Consume: `ProductsProvider`, `SupermarketsProvider`, `ShoppingListProvider` (incluye `quantityOf`/`contains`/`addProduct`), `searchProducts`, `kNoSupermarketFilter`, `validatePriceInput`, `parsePrice`, `formatPrice`, `confirmDialog`.
 - Produce:
   - `class QuantityStepper extends StatelessWidget { const QuantityStepper({super.key, required int value, required ValueChanged<int> onChanged}); }` — "−" deshabilitado en 1; "+" siempre activo.
   - `class ProductFormScreen extends StatefulWidget { const ProductFormScreen({super.key, String? productId}); }` — `productId == null` = alta; si no, edición del producto existente. Campos: nombre (obligatorio, validador rechaza vacío/solo espacios), supermercado (`DropdownButtonFormField`, opción "Sin supermercado"), precio (teclado numérico, `validatePriceInput`). Guardar cierra la pantalla (`Navigator.pop`).
-  - `class ProductsScreen extends StatelessWidget` — campo de búsqueda + dropdown de filtro ("Todos", cada supermercado, "Sin supermercado"); `ListView` de productos (título = nombre; subtítulo = supermercado y/o precio solo si existen); por fila: botón "añadir a la lista" (abre diálogo con `QuantityStepper`, valor inicial 1, y llama `ShoppingListProvider.addProduct`) y menú con "Editar" (abre `ProductFormScreen(productId: ...)`) y "Eliminar" (con `confirmDialog` que avisa que también se quitará de la lista); FAB "Añadir producto".
+  - `class ProductsScreen extends StatelessWidget` — campo de búsqueda + dropdown de filtro ("Todos", cada supermercado, "Sin supermercado"); `ListView` de productos (título = nombre; subtítulo = supermercado y/o precio solo si existen); por fila: botón "añadir a la lista" y menú con "Editar" (abre `ProductFormScreen(productId: ...)`) y "Eliminar" (con `confirmDialog` que avisa que también se quitará de la lista); FAB "Añadir producto".
+  - **Flujo de "añadir a la lista":**
+    1. Se abre el diálogo con `QuantityStepper` (valor inicial 1). Cancelar → no pasa nada.
+    2. Al aceptar con cantidad `n`, se consulta `ShoppingListProvider.quantityOf(productId)`.
+    3. Si es `null` (el producto no está en la lista) → `addProduct(productId, n)` directamente, sin preguntar.
+    4. Si no es `null` (ya está con cantidad `actual`) → `confirmDialog` con título "Producto ya en la lista", mensaje `"<nombre>" ya está en la lista con cantidad <actual>. ¿Sumar <n> más para un total de <actual + n>?` y `confirmLabel: 'Sumar'`. Solo si devuelve `true` se llama `addProduct(productId, n)`; si devuelve `false` la cantidad existente queda intacta.
   - Llaves para tests: `Key('product-tile-<id>')`, `Key('add-to-list-<id>')`.
 
 - [ ] **Paso 1: Test que falla:**
   - `product_form_screen_test`: `blank or whitespace name shows error and does not save` **(RF1)**; `price 'abc' shows 'Precio inválido'` **(RF2)**; `valid form with only a name saves a product without supermarket or price`; `editing preloads existing values`.
-  - `products_screen_test`: `search 'cafe' shows 'Café' and hides others`; `supermarket filter shows only that supermarket's products`; `'Sin supermercado' filter shows only unassigned products`; `add-to-list dialog with quantity 3 adds item with quantity 3`; `delete confirmation cancel keeps product, confirm removes it and its list item`.
+  - `products_screen_test`: `search 'cafe' shows 'Café' and hides others`; `supermarket filter shows only that supermarket's products`; `'Sin supermercado' filter shows only unassigned products`; `add-to-list dialog with quantity 3 adds item with quantity 3 and no confirmation when the product is not in the list`; `delete confirmation cancel keeps product, confirm removes it and its list item`.
+  - `products_screen_test` (confirmación al sumar) **(RF5)**:
+    - `adding a product already in the list asks to confirm and the message shows current quantity and resulting total` (lista con 2, añadir 3 → el diálogo menciona 2 y 5).
+    - `cancelling the sum confirmation keeps the existing quantity unchanged` (sigue en 2).
+    - `confirming the sum updates the single list item to the summed quantity` (queda un solo ítem con 5).
+    - `cancelling the quantity dialog itself does not ask for confirmation and changes nothing`.
 - [ ] **Paso 2:** `flutter test test/product_form_screen_test.dart test/products_screen_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar los tres archivos. Nombres largos: `Text(..., maxLines: 2, overflow: TextOverflow.ellipsis)` para que nunca desborden en pantallas pequeñas.
+- [ ] **Paso 3:** Implementar los tres archivos. Nombres largos: `Text(..., maxLines: 2, overflow: TextOverflow.ellipsis)` para que nunca desborden en pantallas pequeñas. En el flujo de "añadir a la lista", usar `if (!context.mounted) return;` después de cada `await` de diálogo antes de volver a usar `context`.
 - [ ] **Paso 4:** Ejecutar los tests → PASAN. `flutter analyze` → sin issues.
-- [ ] **Paso 5:** Verificación manual: crear productos (con y sin supermercado/precio), buscar con y sin tilde, filtrar, añadir a la lista con cantidad, editar, eliminar.
-- [ ] **Paso 6:** Commit: `feat: add products screen, form, search/filter and add-to-list`
+- [ ] **Paso 5:** Verificación manual: crear productos (con y sin supermercado/precio), buscar con y sin tilde, filtrar, añadir a la lista con cantidad, **volver a añadir el mismo producto y comprobar el diálogo de confirmación (aceptar y cancelar)**, editar, eliminar.
+- [ ] **Paso 6:** Commit: `feat: add products screen, form, search/filter and add-to-list with sum confirmation`
 
 ---
 
-### Tarea 9: P3 — Lista de mercado (lista, tabla, tachado, cantidades, acciones masivas)
+### Tarea 9: P3 — Lista de mercado (lista, tabla, tachado, cantidades, quitar uno, acciones masivas)
 
 **Archivos:**
 - Crear: `lib/screens/shopping_list_screen.dart`, `lib/widgets/shopping_list_view.dart`, `lib/widgets/shopping_table_view.dart`
@@ -353,13 +372,14 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 - Test: `test/shopping_list_screen_test.dart`
 
 **Interfaces:**
-- Consume: `ShoppingListProvider`, `ProductsProvider`, `SupermarketsProvider`, `buildRows`, `buildSections`, `formatPrice`, `QuantityStepper`, `confirmDialog`, `ProductFormScreen`.
+- Consume: `ShoppingListProvider` (incluye `removeProduct` y `restoreItem`), `ProductsProvider`, `SupermarketsProvider`, `buildRows`, `buildSections`, `formatPrice`, `QuantityStepper`, `confirmDialog`, `ProductFormScreen`.
 - Produce:
   - `class ShoppingListScreen extends StatelessWidget` — `TabBar` "Lista" | "Por supermercado"; `AppBar` con menú: "Tachar/Destachar todos" y "Limpiar lista", ambos con `confirmDialog`; estado vacío con texto "La lista está vacía".
   - `class ShoppingListView extends StatelessWidget` — una fila por `ListRow`: nombre, supermercado, `QuantityStepper`, precio unitario (o "—" sin precio), total de línea (o "—"), botón editar (`Navigator.push` a `ProductFormScreen(productId: ...)`). Tocar la fila alterna el tachado.
-  - `class ShoppingTableView extends StatelessWidget` — `SingleChildScrollView` horizontal con una columna de ancho fijo (160) por `SupermarketSection`: encabezado con el título y un menú "Tachar/Destachar todos de este supermercado" (con `confirmDialog`), celdas con nombre, `cantidad × precio` y botón editar, y pie con `section.totalLabel`. Tocar una celda alterna el tachado.
+    - **Quitar un solo producto:** cada fila va envuelta en un `Dismissible` (`direction: DismissDirection.endToStart`, `key: Key('dismiss-<productId>')`) con fondo rojo e icono de papelera. Al completar el deslizamiento se llama `ShoppingListProvider.removeProduct(productId)` (el producto **no** se elimina de P1) y se muestra un `SnackBar` "«<nombre>» quitado de la lista" con acción "Deshacer", que llama `ShoppingListProvider.restoreItem(item)` con el `ShoppingItem` capturado antes de quitarlo (cantidad y tachado originales). Antes de mostrar el nuevo `SnackBar`, llamar `ScaffoldMessenger.of(context).hideCurrentSnackBar()` para que no se acumulen.
+  - `class ShoppingTableView extends StatelessWidget` — `SingleChildScrollView` horizontal con una columna de ancho fijo (160) por `SupermarketSection`: encabezado con el título y un menú "Tachar/Destachar todos de este supermercado" (con `confirmDialog`), celdas con nombre, `cantidad × precio` y botón editar, y pie con `section.totalLabel`. Tocar una celda alterna el tachado. La tabla no tiene deslizar: refleja automáticamente los productos quitados desde la pestaña "Lista".
   - Tachado = `TextDecoration.lineThrough` + color atenuado; nunca cambia totales.
-  - Llaves para tests: `Key('row-name-<productId>')` (lista), `Key('cell-name-<productId>')` (tabla), `Key('section-total-<title>')`.
+  - Llaves para tests: `Key('row-name-<productId>')` (lista), `Key('cell-name-<productId>')` (tabla), `Key('section-total-<title>')`, `Key('dismiss-<productId>')` (fila deslizable).
 
 - [ ] **Paso 1: Test que falla:**
   - `tapping a row in the list view strikes the name in both list and table views` (la decoración `lineThrough` aparece en `row-name-` y en `cell-name-`); tocarla de nuevo la quita en ambas.
@@ -371,11 +391,18 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `strike-all asks confirmation and toggles every item`.
   - `clear list: cancel keeps items, confirm empties the list and shows 'La lista está vacía'`.
   - `edit button opens the product form preloaded with that product`.
+  - Quitar un solo producto **(RF6)** (usar `tester.drag(find.byKey(Key('dismiss-<id>')), const Offset(-500, 0))` seguido de `pumpAndSettle`):
+    - `swiping a row removes only that product from the list view and the table view`.
+    - `swiping a row does not delete the product from the products catalog`.
+    - `removing a product updates the section total and drops the section if it becomes empty`.
+    - `removing the last item shows 'La lista está vacía'`.
+    - `swipe shows a SnackBar with 'Deshacer'; tapping it restores the item with its original quantity and checked state`.
+    - `swiping a checked item then undoing keeps it checked`.
 - [ ] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar los tres archivos; las vistas leen `buildRows`/`buildSections` en cada `build` (sin estado duplicado).
+- [ ] **Paso 3:** Implementar los tres archivos; las vistas leen `buildRows`/`buildSections` en cada `build` (sin estado duplicado). En `ShoppingListView`, capturar el `ShoppingItem` (`row.item`) en el `onDismissed` antes de llamar `removeProduct`, para poder restaurarlo.
 - [ ] **Paso 4:** `flutter test test/shopping_list_screen_test.dart` → PASA. Luego `flutter test` completo → todo en verde.
-- [ ] **Paso 5:** Verificación manual en dispositivo: tachar desde la lista y ver la tabla; tachar desde la tabla y ver la lista; acciones masivas; límites de pantalla pequeña (nombres largos, 5+ supermercados con scroll horizontal).
-- [ ] **Paso 6:** Commit: `feat: add shopping list screen with list/table views and bulk actions`
+- [ ] **Paso 5:** Verificación manual en dispositivo: tachar desde la lista y ver la tabla; tachar desde la tabla y ver la lista; acciones masivas; **deslizar un producto para quitarlo (y probar "Deshacer"), confirmar que sigue existiendo en la pantalla de Productos**; límites de pantalla pequeña (nombres largos, 5+ supermercados con scroll horizontal).
+- [ ] **Paso 6:** Commit: `feat: add shopping list screen with list/table views, swipe-to-remove and bulk actions`
 
 ---
 
@@ -394,7 +421,7 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 - [ ] **Paso 3:** `flutter test` y `flutter analyze` → todo en verde.
 - [ ] **Paso 4:** `flutter build apk --release` → genera `app-release.apk`.
 - [ ] **Paso 5:** Verificar permisos: `aapt dump permissions build/app/outputs/flutter-apk/app-release.apk` → no incluye `android.permission.INTERNET`.
-- [ ] **Paso 6:** Instalar con `adb install -r build/app/outputs/flutter-apk/app-release.apk` y recorrer la lista de humo: crear 2 supermercados y 4 productos (uno sin precio, uno sin supermercado) → añadir a la lista → tachar/destachar desde ambas vistas → verificar `TOTAL + (?)` → cerrar la app desde recientes y reabrir → todo persiste.
+- [ ] **Paso 6:** Instalar con `adb install -r build/app/outputs/flutter-apk/app-release.apk` y recorrer la lista de humo: crear 2 supermercados y 4 productos (uno sin precio, uno sin supermercado) → añadir a la lista → **volver a añadir uno ya presente y confirmar el diálogo de suma** → tachar/destachar desde ambas vistas → **deslizar un producto para quitarlo y deshacer** → verificar `TOTAL + (?)` → cerrar la app desde recientes y reabrir → todo persiste.
 - [ ] **Paso 7:** Commit: `chore: configure release signing`
 
 ---
@@ -408,5 +435,6 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 
 ## Autorrevisión del plan
 
-- **Cobertura del spec:** P1 (Tarea 8), P2 (Tarea 7), P3 (Tarea 9); buscar con filtro (3 y 8); añadir a lista con cantidad (5 y 8); modificar cantidad (9); tachar uno/supermercado/todos, reversibles y sincronizados (5 y 9); limpiar con confirmación (9); atajo de edición (9); totales con `+ (?)` y columna Otros (6 y 9); persistencia (2, 4, 5, 10); APK sin Play Store (10).
-- **Brecha conocida del spec:** no hay función para quitar un solo producto de la lista (solo "Limpiar lista"). No se incluyó por estar fuera del MVP; si se quiere, añadir un botón en la fila usando `ShoppingListProvider.removeProduct` (ya existe).
+- **Cobertura del spec:** P1 (Tarea 8), P2 (Tarea 7), P3 (Tarea 9); buscar con filtro (3 y 8); añadir a lista con cantidad y confirmación al sumar sobre un producto existente (5 y 8); modificar cantidad (9); tachar uno/supermercado/todos, reversibles y sincronizados (5 y 9); limpiar con confirmación (9); quitar un solo producto con deslizar y deshacer (5 y 9); atajo de edición (9); totales con `+ (?)` y columna Otros (6 y 9); persistencia (2, 4, 5, 10); APK sin Play Store (10).
+- **Brecha anterior resuelta:** ya existe una función para quitar un solo producto de la lista (deslizar la fila en P3, Tarea 9, apoyada en `ShoppingListProvider.removeProduct` y `restoreItem` de la Tarea 5).
+- **Brecha conocida:** la pestaña "Por supermercado" no tiene gesto de quitar (las celdas de 160 px de ancho ya llevan nombre, cantidad × precio y botón de edición); para quitar un producto hay que hacerlo desde la pestaña "Lista". Si se quiere, añadir una opción "Quitar de la lista" en un menú de la celda reutilizando `removeProduct`.
