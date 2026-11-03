@@ -13,6 +13,7 @@ App Android 100% local para organizar las compras del mercado: gestiona producto
   - Si un supermercado tiene productos sin precio, su total se muestra como `$X + (?)`.
   - Añadir un producto que ya está en la lista pide confirmación antes de sumar la cantidad.
   - **Total y presupuesto (v1.0.1):** la barra superior muestra el total general de la lista (`$X + (?)` si hay productos sin precio). Con el icono de cartera se fija un presupuesto opcional y la barra muestra el restante (presupuesto − total), como `$RESTANTE - (?)` si hay productos sin precio. El restante se ve en verde si es positivo o cero y en rojo si es negativo. El presupuesto se conserva al limpiar la lista y se puede cambiar o quitar cuando se quiera.
+  - **Descuento / precio temporal (v1.0.2):** al añadir un producto a la lista puedes indicar, opcionalmente, un descuento como porcentaje o como precio final; al llenar uno, el otro se calcula solo. Si el producto no tiene precio, solo se puede indicar el precio final. El precio temporal aplica únicamente a ese producto en la lista (no cambia el precio del catálogo) y se puede añadir, modificar o quitar después desde la lista de mercado, en ambas vistas. Los totales y el presupuesto usan el precio con descuento.
 
 ## Descargar e instalar
 
@@ -32,13 +33,13 @@ Cada versión nueva se instala encima de la anterior y conserva los datos, siemp
 ```
 lib/
 ├── main.dart, app.dart, app_providers.dart
-├── models/      # Supermarket, Product, ShoppingItem
+├── models/      # Supermarket, Product, ShoppingItem (incluye el precio temporal)
 ├── data/        # LocalStorage (shared_preferences)
 ├── providers/   # SupermarketsProvider, ProductsProvider, ShoppingListProvider (incluye el presupuesto)
 ├── logic/       # búsqueda, agrupación y totales (funciones puras)
-├── utils/       # parseo/formato de precios, normalización de texto
+├── utils/       # parseo/formato de precios, cálculo de descuentos, normalización de texto
 ├── screens/     # Productos, formulario, Supermercados, Lista
-└── widgets/     # diálogo de confirmación, selector de cantidad, vistas de lista y tabla
+└── widgets/     # diálogo de confirmación, selector de cantidad, campos de descuento, vistas de lista y tabla
 assets/icon/     # imágenes fuente del ícono de la app
 test/            # espejo de lib/
 ```
@@ -56,7 +57,7 @@ flutter test
 
 ## Generar el APK release
 
-Antes de compilar una versión nueva, sube el número en `pubspec.yaml` (por ejemplo `1.0.1+2`). El número tras el `+` debe ser siempre mayor que el anterior, o Android rechazará la actualización.
+Antes de compilar una versión nueva, sube el número en `pubspec.yaml` (por ejemplo `1.0.2+3`). El número tras el `+` debe ser siempre mayor que el anterior, o Android rechazará la actualización.
 
 El APK se firma con un keystore propio que **no** está en el repositorio.
 
@@ -93,7 +94,7 @@ El APK se firma con un keystore propio que **no** está en el repositorio.
 
    Si ya hay una versión instalada con otra firma (por ejemplo, una debug), desinstálala antes con `adb uninstall com.listamercado.lista_mercado`.
 
-5. Para publicar, copia el APK como `ListaMercado.apk` y adjúntalo a un nuevo [release](../../releases/new) con una etiqueta como `v1.0.1`.
+5. Para publicar, copia el APK como `ListaMercado.apk` y adjúntalo a un nuevo [release](../../releases/new) con una etiqueta como `v1.0.2`.
 
 > Guarda una copia del `.jks` y de su contraseña en un lugar seguro. Si se pierden, no se podrá actualizar la app instalada sin desinstalarla (y se borran sus datos locales).
 
@@ -102,6 +103,7 @@ El APK release no declara el permiso `INTERNET`. Se puede comprobar con `aapt du
 ## Convenciones
 
 - Textos visibles en español; identificadores de código en inglés.
+- Ramas: `main` (solo versiones publicadas, con tag) y `develop` (integración); cada función se desarrolla en `feature/<nombre>` desde `develop`. Detalle y comandos en [`CLAUDE.md`](CLAUDE.md).
 - Un commit por tarea, con mensajes estilo `feat:` / `fix:` / `chore:`.
 - `dart format .` y `flutter analyze` limpios antes de cada commit.
 - No añadir dependencias ni funciones fuera del MVP sin actualizar `CLAUDE.md` primero.

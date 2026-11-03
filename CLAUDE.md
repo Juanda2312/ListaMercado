@@ -10,7 +10,7 @@
 
 **Spec:** sección "Requisitos" de este mismo archivo.
 
-**Versiones:** 1.0.0 = MVP (Tareas 0–10). 1.0.1 = total general y presupuesto en la barra de la lista (Tarea 11).
+**Versiones:** 1.0.0 = MVP (Tareas 0–10). 1.0.1 = total general y presupuesto en la barra de la lista (Tarea 11). 1.0.2 = descuento / precio temporal al añadir y editar productos de la lista (Tareas 12–16).
 
 ## Restricciones globales
 
@@ -27,6 +27,50 @@
 - Productos sin supermercado van a la columna **Otros**.
 - Cada supermercado es una **columna** de la tabla de la lista.
 - Dependencia de desarrollo permitida: flutter_launcher_icons (solo para generar el ícono; no entra en el APK).
+- El descuento es opcional: sin descuento, todo se comporta exactamente como en 1.0.1. No se añaden dependencias.
+
+## Flujo de ramas (git)
+
+Dos ramas permanentes y una temporal por cada función:
+
+- **`main`**: solo versiones publicadas. Cada commit de `main` es un release y lleva su tag (`v1.0.2`). Nunca se trabaja directamente en ella.
+- **`develop`**: rama de integración. Aquí se juntan las funciones terminadas; siempre debe pasar `flutter analyze` y `flutter test`. Nunca se trabaja directamente en ella (salvo la creación inicial).
+- **`feature/<nombre>`**: rama temporal que sale de `develop`, lleva un commit por tarea y vuelve a `develop` con merge `--no-ff`; después se borra. Ejemplo: `feature/discount-1.0.2`. Correcciones urgentes sobre una versión ya publicada: `fix/<nombre>` desde `main`, que se fusiona en `main` (con tag) y también en `develop`.
+
+Comandos:
+
+```bash
+# Una sola vez: crear develop desde main
+git checkout main && git pull
+git checkout -b develop
+git push -u origin develop
+
+# Empezar una función
+git checkout develop && git pull
+git checkout -b feature/<nombre>
+
+# Durante la función: un commit por tarea
+git add <archivos>
+git commit -m "feat: ..."
+
+# Terminar la función (analyze y test en verde antes de fusionar)
+git checkout develop && git pull
+git merge --no-ff feature/<nombre> -m "merge: feature/<nombre> into develop"
+git push origin develop
+git branch -d feature/<nombre>
+git push origin --delete feature/<nombre>   # solo si la rama se subió
+
+# Publicar una versión (desde develop con todo en verde y la versión subida en pubspec.yaml)
+git checkout main && git pull
+git merge --no-ff develop -m "release: v<X.Y.Z>"
+git tag -a v<X.Y.Z> -m "Versión <X.Y.Z>"
+git push origin main --tags
+git checkout develop
+git merge main          # normalmente es un avance rápido; mantiene develop al día
+git push origin develop
+```
+
+Reglas: el APK y el release de GitHub se generan siempre desde `main` ya etiquetada; los mensajes de commit van en inglés (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`); no se hace `push --force` sobre `main` ni `develop`.
 
 ## Requisitos (resumen)
 
@@ -34,12 +78,13 @@
 **P2 – Supermercados:** pantalla con solo el nombre. Añadir, modificar, eliminar.
 **P3 – Lista de mercado:** lista (nombre, supermercado, cantidad, precio unitario, total) y tabla por supermercados (columna Otros). Modificar cantidad; tachar/destachar un producto (sincronizado entre lista y tabla); tachar/destachar todos los de un supermercado; tachar/destachar todos; limpiar la lista; quitar un solo producto de la lista (deslizando la fila, con opción de deshacer); botón en cada producto que abre su edición (acceso directo a P1).
 **P3 – Barra superior (v1.0.1):** total general de la lista (`TOTAL + (?)` si hay productos sin precio) y presupuesto opcional; restante = presupuesto − total, mostrado como `RESTANTE - (?)` si hay productos sin precio, en verde si ≥ 0 y en rojo si es negativo. El presupuesto se guarda en `ShoppingListProvider` (`budget_v1`) y no se borra al limpiar la lista.
+**P1/P3 – Descuento (v1.0.2):** al añadir un producto a la lista, además de la cantidad se puede indicar un descuento opcional como **% de descuento** o como **precio final** (dos campos complementarios: al llenar uno, el otro se calcula y se rellena solo). Se puede añadir, modificar o quitar después desde P3 (vista Lista y vista Por supermercado). Los totales y el presupuesto usan el precio con descuento.
 
 ## Decisiones de diseño (cerradas)
 
 - **Un producto aparece una sola vez en la lista.** Añadirlo de nuevo suma la cantidad, **previa confirmación del usuario** (el diálogo muestra la cantidad actual y el total resultante). Por eso `ShoppingItem` se identifica por `productId` (sin id propio).
 - **La confirmación vive en la UI, no en el provider.** `ShoppingListProvider.addProduct` siempre suma; es la pantalla de productos la que consulta `quantityOf` y decide si pregunta antes de llamarlo.
-- **El precio vive solo en `Product`.** La lista lee el precio vigente del producto; no se guarda copia en la lista.
+- **El precio base vive solo en `Product`; el descuento vive en `ShoppingItem` (v1.0.2).** La lista lee el precio base vigente del producto y no guarda copia de él. `ShoppingItem.tempPrice` (`double?`) es el precio final con descuento de esa entrada; el porcentaje no se guarda, se calcula contra el precio base. Precio efectivo = `tempPrice ?? product.price`.
 - **Eliminar un producto** lo quita también de la lista. **Eliminar un supermercado** NO borra productos: pasan a "sin supermercado" (columna Otros).
 - **Quitar un producto de la lista** (deslizar la fila) solo lo saca de la lista: el producto sigue existiendo en P1. No pide confirmación previa, pero muestra un `SnackBar` con "Deshacer" que lo restaura con su cantidad y estado de tachado originales.
 - **Acciones masivas de tachado alternan:** si todos los del alcance ya están tachados, los destacha; si no, los tacha todos.
@@ -49,6 +94,14 @@
 - **La tabla de P3** es un conjunto de columnas con scroll horizontal (una por supermercado con productos, `Otros` al final). Lista y tabla son dos pestañas internas de P3 que leen el mismo `ShoppingListProvider`, por eso el tachado y la eliminación se sincronizan solos.
 - **IDs:** `DateTime.now().microsecondsSinceEpoch.toString()`.
 - **Total general y presupuesto (v1.0.1):** el total general suma todas las filas con precio (las tachadas también cuentan, igual que en los totales por supermercado). El presupuesto vive en `ShoppingListProvider` (no hay provider nuevo, así `AppProviders` y los `MultiProvider` no cambian), se guarda en `shared_preferences` con la clave `budget_v1` (un `double`), es opcional y debe ser > 0 (mismas reglas de parseo que el precio). "Limpiar lista" no lo borra. El restante se muestra solo si hay presupuesto: verde si ≥ 0, rojo si < 0; con productos sin precio lleva el sufijo ` - (?)`.
+- **Descuento / precio temporal (v1.0.2):**
+  - Dos campos complementarios en un widget reutilizable (`DiscountFields`): al editar el % se calcula el precio final y viceversa; si el campo editado queda vacío o inválido, el otro se vacía. Ambos son opcionales.
+  - Validación: % en (0, 100); precio final > 0 y **menor** que el precio base. Mensaje de error: `Descuento inválido` (el precio final reutiliza `Precio inválido` si no se puede parsear). Se parsean con las reglas de `parsePrice`. Resultados redondeados a 2 decimales; el % se muestra con máximo 2 decimales (`15%`, `12,5%`).
+  - Producto sin precio base: el campo % se deshabilita y solo se puede indicar el precio final; ese precio cuenta como precio (la fila ya no suma `(?)`).
+  - Al añadir un producto que ya está en la lista: si el diálogo trae descuento, reemplaza el `tempPrice` actual (el mensaje de confirmación lo menciona); si no trae, se conserva el existente.
+  - Si el precio base del producto se edita después y el `tempPrice` deja de ser menor que él, el `tempPrice` se conserva tal cual y simplemente no se muestra porcentaje.
+  - `restoreItem` ("Deshacer") conserva el `tempPrice`. "Limpiar lista" lo borra junto con los ítems.
+  - Persistencia: `tempPrice` es opcional en el JSON de `shopping_items_v1`; si falta o es inválido se lee como `null` sin descartar el ítem.
 
 ## Arquitectura
 
@@ -60,7 +113,7 @@ Providers (providers/)             ChangeNotifier, única fuente de verdad en me
         │           └── callbacks onRemoved (cascadas) cableados en AppProviders.create
         ▼
 LocalStorage (data/)               shared_preferences, JSON por colección
-Lógica pura (logic/, utils/)       búsqueda, agrupación/totales, parseo y formato de precios
+Lógica pura (logic/, utils/)       búsqueda, agrupación/totales, parseo y formato de precios, cálculo de descuentos
 ```
 
 - Los providers cargan sincrónicamente en su constructor (`SharedPreferences` ya está abierto en `main`) y persisten tras cada mutación.
@@ -77,34 +130,36 @@ lib/
 ├── models/
 │   ├── supermarket.dart
 │   ├── product.dart
-│   └── shopping_item.dart
+│   └── shopping_item.dart            # incluye tempPrice opcional (v1.0.2)
 ├── data/
 │   └── local_storage.dart            # load/save JSON de las 3 colecciones + presupuesto
 ├── providers/
 │   ├── supermarkets_provider.dart
 │   ├── products_provider.dart
-│   └── shopping_list_provider.dart   # lista + presupuesto
+│   └── shopping_list_provider.dart   # lista + presupuesto + precio temporal
 ├── logic/
 │   ├── product_search.dart           # searchProducts + kNoSupermarketFilter
 │   └── list_grouping.dart            # ListRow, SupermarketSection, ListTotal, buildRows, buildSections, buildTotal
 ├── utils/
 │   ├── price_format.dart             # parsePrice, validatePriceInput, formatPrice
+│   ├── discount.dart                 # priceFromPercent, percentFromPrice, parsePercent, validatePercentInput, formatPercent
 │   └── text_normalize.dart           # normalizeText
 ├── screens/
 │   ├── home_shell.dart               # NavigationBar + IndexedStack (P1, P2, P3)
-│   ├── products_screen.dart          # P1
+│   ├── products_screen.dart          # P1 (diálogo de añadir a la lista con cantidad y descuento)
 │   ├── product_form_screen.dart      # alta/edición de producto (usada por P1 y por el atajo de P3)
 │   ├── supermarkets_screen.dart      # P2
 │   └── shopping_list_screen.dart     # P3 (barra con total/presupuesto, TabBar: Lista | Por supermercado + acciones masivas)
 └── widgets/
     ├── confirm_dialog.dart
     ├── quantity_stepper.dart
-    ├── shopping_list_view.dart       # pestaña "Lista" (con deslizar para quitar)
+    ├── discount_fields.dart          # campos % / precio final complementarios (alta y edición)
+    ├── shopping_list_view.dart       # pestaña "Lista" (con deslizar para quitar y editar descuento)
     └── shopping_table_view.dart      # pestaña "Por supermercado" (columnas)
 
 test/                                 # espejo de lib/: models_test, local_storage_test, price_format_test,
-                                      # product_search_test, providers_test, list_grouping_test,
-                                      # app_providers_test, y widget tests de pantallas
+                                      # discount_test, product_search_test, providers_test, list_grouping_test,
+                                      # app_providers_test, y widget tests de pantallas (incl. discount_fields_test)
 ```
 
 ## Review Focus
@@ -118,6 +173,7 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 5. **Añadir dos veces el mismo producto a la lista** → una sola fila con cantidades sumadas, nunca duplicados; la segunda vez pide confirmación y, si se cancela, la cantidad existente no cambia. (Tareas 5 y 8)
 6. **Quitar un producto de la lista** no borra el producto del catálogo, actualiza totales y tabla, y "Deshacer" lo restaura con su cantidad y tachado originales, sin duplicar si el producto fue añadido de nuevo entre tanto. (Tareas 5 y 9)
 7. **Presupuesto:** valor inválido, cero o negativo no se guarda; un valor corrupto en almacenamiento se ignora (sin presupuesto); el restante cambia de verde a rojo exactamente al pasar de ≥ 0 a < 0; "Limpiar lista" no lo borra. (Tarea 11)
+8. **Descuento:** % de 0, negativo, ≥ 100 o precio final ≥ precio base → inválido y no se guarda; los dos campos nunca quedan inconsistentes entre sí; sin precio base solo funciona el precio final y la fila deja de contar como sin precio; un `tempPrice` corrupto en almacenamiento se ignora sin perder el ítem; editar el precio base por debajo del `tempPrice` no rompe la pantalla; "Deshacer" restaura el descuento. (Tareas 12–15)
 
 ---
 
@@ -462,8 +518,138 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 
 ---
 
+### Tarea 12: Modelo y lógica de descuento (v1.0.2)
+
+**Archivos:**
+- Crear: `lib/utils/discount.dart`
+- Modificar: `lib/models/shopping_item.dart`, `lib/logic/list_grouping.dart`
+- Test: `test/discount_test.dart`, `test/models_test.dart`, `test/list_grouping_test.dart`
+
+**Interfaces:**
+- Consume: `parsePrice`, `formatPrice`, `ShoppingItem`, `ListRow`.
+- Produce:
+  - `double? priceFromPercent(double base, double percent)` → `null` si `base <= 0`, `percent` fuera de (0, 100) o el resultado redondeado es ≤ 0; si no, `base * (1 - percent/100)` a 2 decimales.
+  - `double? percentFromPrice(double base, double price)` → `null` si `base <= 0`, `price <= 0` o `price >= base`; si no, `(1 - price/base) * 100` a 2 decimales.
+  - `double? parsePercent(String raw)` → usa `parsePrice` y devuelve `null` si el valor no está en (0, 100).
+  - `String? validatePercentInput(String? raw)` → `null` si vacío o válido; si no, `'Descuento inválido'`.
+  - `String formatPercent(double value)` → `15%`, `12,5%` (máximo 2 decimales, coma decimal, sin ceros finales).
+  - `ShoppingItem`: campo `final double? tempPrice`; `copyWith({int? quantity, bool? checked, double? tempPrice, bool clearTempPrice = false})`; `toJson` incluye `tempPrice`; `fromJson` lee `tempPrice` como `null` si falta o no es un número positivo y finito (nunca lanza por este campo).
+  - `ListRow`: `unitPrice = item.tempPrice ?? product.price`; `double? get basePrice => product.price`; `bool get hasDiscount => item.tempPrice != null`; `double? get discountPercent` (vía `percentFromPrice`, `null` si no aplica). `lineTotal` usa `unitPrice`. Como `SupermarketSection.hasUnpriced` y `buildTotal` ya se basan en `unitPrice`, una fila con `tempPrice` cuenta como "con precio".
+
+- [ ] **Paso 1: Test que falla:**
+  - `discount_test`: `priceFromPercent(10000, 15) == 8500`; `percentFromPrice(10000, 8500) == 15`; `percentFromPrice(10000, 9000) == 10`; límites: `percent` 0, 100, -5 → `null`; `price` igual o mayor al base → `null`; `base` 0 → `null`; redondeo a 2 decimales; `formatPercent(15) == '15%'`, `formatPercent(12.5) == '12,5%'`; `validatePercentInput('') == null`, `'abc'` y `'100'` → `'Descuento inválido'`. **(RF8)**
+  - `models_test`: `tempPrice` round-trip; ausente → `null`; `tempPrice` de tipo incorrecto o ≤ 0 → `null` sin lanzar excepción; `copyWith(clearTempPrice: true)` lo quita; `copyWith` sin `tempPrice` lo conserva. **(RF8)**
+  - `list_grouping_test`: fila con `tempPrice` usa ese precio en `lineTotal`; fila sin precio base pero con `tempPrice` no marca `(?)` ni en la sección ni en `buildTotal`; `discountPercent` es `null` si `tempPrice >= basePrice`. **(RF8)**
+- [ ] **Paso 2:** `flutter test test/discount_test.dart test/models_test.dart test/list_grouping_test.dart` → FALLA.
+- [ ] **Paso 3:** Implementar.
+- [ ] **Paso 4:** Mismos tests → PASAN; `flutter test` completo en verde (los tests de 1.0.1 no deben cambiar).
+- [ ] **Paso 5:** Commit: `feat: add temporary price to shopping items and discount utils`
+
+---
+
+### Tarea 13: ShoppingListProvider con precio temporal
+
+**Archivos:**
+- Modificar: `lib/providers/shopping_list_provider.dart`
+- Test: `test/providers_test.dart` (grupo `shopping list`)
+
+**Interfaces:**
+- Consume: `ShoppingItem.tempPrice`.
+- Produce:
+  - `Future<void> addProduct(String productId, int quantity, {double? tempPrice})` → si `tempPrice != null` (y es > 0 y finito) reemplaza el del ítem (nuevo o existente); si es `null`, conserva el existente. Sigue sumando cantidades sin preguntar.
+  - `Future<void> setTempPrice(String productId, double? value)` → `null` quita el descuento; valores no positivos o no finitos se ignoran; ids que no están en la lista se ignoran (sin notificar).
+  - `restoreItem` ya conserva `tempPrice` porque reinserta el `ShoppingItem` tal cual.
+
+- [ ] **Paso 1: Test que falla:**
+  - `addProduct with tempPrice stores it on a new item`.
+  - `addProduct without tempPrice keeps the existing tempPrice when summing`.
+  - `addProduct with tempPrice replaces the existing one`.
+  - `setTempPrice sets, changes and removes the discount`; `setTempPrice ignores non-positive values and unknown ids (no notify)`.
+  - `tempPrice persists across instances`.
+  - `restoreItem keeps the tempPrice`. **(RF8)**
+- [ ] **Paso 2:** `flutter test test/providers_test.dart` → FALLA en los tests nuevos.
+- [ ] **Paso 3:** Implementar.
+- [ ] **Paso 4:** `flutter test test/providers_test.dart` → PASA.
+- [ ] **Paso 5:** Commit: `feat: support temporary price in shopping list provider`
+
+---
+
+### Tarea 14: Descuento al añadir a la lista
+
+**Archivos:**
+- Crear: `lib/widgets/discount_fields.dart`
+- Modificar: `lib/screens/products_screen.dart`
+- Test: `test/discount_fields_test.dart`, `test/products_screen_test.dart`
+
+**Interfaces:**
+- Consume: `priceFromPercent`, `percentFromPrice`, `parsePercent`, `parsePrice`, `validatePercentInput`, `validatePriceInput`, `formatPercent`, `formatPrice`, `ShoppingListProvider.addProduct`.
+- Produce:
+  - `class DiscountFields extends StatefulWidget { const DiscountFields({super.key, required double? basePrice, double? initialTempPrice, required void Function(double? tempPrice, bool isValid) onChanged}); }` — dos campos: `%` (`Key('discount-percent')`) y `Precio final` (`Key('discount-price')`). Editar uno calcula y rellena el otro (con una bandera interna para evitar bucles); si el campo editado queda vacío o inválido, el otro se vacía y `onChanged(null)`. Sin `basePrice`, el campo % queda deshabilitado con la ayuda "Sin precio: indica el precio final". Muestra el error en el campo que corresponda. `onChanged(tempPrice, isValid)` entrega: campos vacíos → `(null, true)`; descuento válido → `(precioFinal, true)`; algún campo inválido → `(null, false)`. Así el diálogo distingue "vacío" de "inválido" (en la Tarea 15, "Guardar" solo se habilita con `tempPrice != null`). Con `initialTempPrice` precarga ambos campos.
+  - `_QuantityDialog` recibe el producto, muestra `QuantityStepper` + `DiscountFields` (opcional; dejarlo vacío no cambia nada) y devuelve `({int quantity, double? tempPrice})`. El botón "Añadir" se deshabilita mientras algún campo sea inválido.
+  - Flujo: si el producto ya está en la lista y el diálogo trae `tempPrice`, el mensaje de confirmación añade `Se aplicará el precio temporal <precio>.`; si no, el mensaje no cambia. Tras confirmar se llama `addProduct(productId, n, tempPrice: tempPrice)`.
+
+- [ ] **Paso 1: Test que falla:**
+  - `discount_fields_test`: escribir `15` en % con base 10000 → precio final `8500`; escribir `8500` en precio → % `15%`; vaciar un campo vacía el otro; `abc` y `100` muestran `Descuento inválido`; precio final ≥ base muestra error; sin precio base el campo % está deshabilitado y el precio final funciona. **(RF8)**
+  - `products_screen_test`: añadir con descuento por % guarda el `tempPrice` correcto; añadir con precio final guarda el `tempPrice`; añadir sin tocar los campos no guarda descuento (comportamiento 1.0.1 intacto); producto ya en la lista + descuento → el diálogo de suma lo menciona y al confirmar reemplaza el `tempPrice`; sin descuento nuevo se conserva el existente.
+- [ ] **Paso 2:** `flutter test test/discount_fields_test.dart test/products_screen_test.dart` → FALLA.
+- [ ] **Paso 3:** Implementar. Usar `if (!context.mounted) return;` después de cada `await`.
+- [ ] **Paso 4:** Tests → PASAN. `flutter test` completo en verde; `flutter analyze` sin issues.
+- [ ] **Paso 5:** Verificación manual: añadir con %, con precio final y sin descuento; producto sin precio base; volver a añadir uno ya presente con y sin descuento.
+- [ ] **Paso 6:** Commit: `feat: add discount fields to the add-to-list dialog`
+
+---
+
+### Tarea 15: Editar el descuento desde la lista de mercado
+
+**Archivos:**
+- Modificar: `lib/widgets/shopping_list_view.dart`, `lib/widgets/shopping_table_view.dart`
+- Test: `test/shopping_list_screen_test.dart`
+
+**Interfaces:**
+- Consume: `DiscountFields`, `ShoppingListProvider.setTempPrice`, `ListRow` (`hasDiscount`, `basePrice`, `discountPercent`), `formatPercent`, `formatPrice`.
+- Produce:
+  - Vista **Lista**: botón de descuento por fila (`Key('edit-discount-<productId>')`, icono `Icons.sell_outlined`) que abre un diálogo con `DiscountFields` precargado y acciones "Cancelar", "Quitar" (solo si ya hay descuento) y "Guardar". Si la fila tiene descuento, muestra el precio base tachado, el precio con descuento y `-<porcentaje>` (este último solo si `discountPercent != null`). El total de línea usa el precio efectivo.
+  - Vista **Por supermercado**: botón equivalente (`Key('discount-cell-<productId>')`, `iconSize: 20`, `VisualDensity.compact`) junto al botón de editar; `_columnWidth` pasa de 160 a 184. La línea `cantidad × precio` muestra el precio efectivo y, si hay descuento, `(-<porcentaje>)`.
+  - Guardar llama `setTempPrice(productId, valor)`; Quitar llama `setTempPrice(productId, null)`. Los totales por supermercado, el total general y el presupuesto se actualizan solos.
+
+- [ ] **Paso 1: Test que falla:**
+  - `discount button on a list row opens the dialog; saving a % sets tempPrice and updates line total, section total, grand total and remaining budget`. **(RF8)**
+  - `editing an existing discount preloads both fields; Quitar removes it and restores the base price`.
+  - `product without base price: discount via final price makes the row stop counting as (?)`.
+  - `the table cell shows the discounted price and the discount button works there too`.
+  - `swiping a row with discount and tapping Deshacer restores the discount`.
+  - `striking an item with discount does not change totals`.
+- [ ] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
+- [ ] **Paso 3:** Implementar.
+- [ ] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
+- [ ] **Paso 5:** Verificación manual en dispositivo y en tema oscuro: añadir, modificar y quitar descuento en ambas vistas; ver cómo cambian los totales y el restante del presupuesto; cerrar la app desde recientes y reabrir → persiste; pantalla pequeña (nombre largo + dos botones en la celda).
+- [ ] **Paso 6:** Commit: `feat: edit discount from the shopping list and table views`
+
+---
+
+### Tarea 16: Release v1.0.2
+
+**Archivos:**
+- Modificar: `pubspec.yaml` (versión `1.0.2+3`)
+
+**Interfaces:**
+- Consume: app completa con las Tareas 12–15.
+- Produce: `build/app/outputs/flutter-apk/app-release.apk` firmado con el mismo keystore que 1.0.1, y un release `v1.0.2` en GitHub con `ListaMercado.apk`.
+
+- [ ] **Paso 1:** En `feature/discount-1.0.2`, subir la versión a `1.0.2+3` en `pubspec.yaml`.
+- [ ] **Paso 2:** `dart format .`, `flutter analyze` y `flutter test` → todo en verde.
+- [ ] **Paso 3:** Commit: `chore: bump version to 1.0.2`. Fusionar la función en `develop` (`--no-ff`) y borrar la rama temporal, según "Flujo de ramas".
+- [ ] **Paso 4:** Fusionar `develop` en `main` (`--no-ff`) y crear el tag `v1.0.2`, según "Flujo de ramas".
+- [ ] **Paso 5:** Desde `main`: `flutter build apk --release` (mismo keystore, para conservar los datos al actualizar).
+- [ ] **Paso 6:** Verificar que no hay permiso `INTERNET` (`aapt dump permissions`) y la firma (`apksigner verify --print-certs`).
+- [ ] **Paso 7:** `adb install -r build/app/outputs/flutter-apk/app-release.apk` sobre la 1.0.1 y comprobar que los datos antiguos se conservan y que la lista existente abre sin descuentos; recorrer la lista de humo con descuentos (añadir con %, con precio final, editar y quitar desde la lista y la tabla, verificar totales y presupuesto, cerrar y reabrir).
+- [ ] **Paso 8:** Copiar el APK como `ListaMercado.apk` (sin commitearlo), crear el release `v1.0.2` en GitHub adjuntándolo y volver a `develop` (`git checkout develop && git merge main`).
+
+---
+
 ## Convenciones de trabajo
 
+- Ramas: `main` (solo releases con tag) y `develop` (integración); cada función en su rama `feature/<nombre>` desde `develop` (ver "Flujo de ramas (git)").
 - Un commit por tarea (mensajes en inglés, estilo `feat:`/`chore:`/`fix:`).
 - `dart format .` y `flutter analyze` limpios antes de cada commit.
 - Los widgets leen estado con `context.watch<T>()` y ejecutan acciones con `context.read<T>()`.
@@ -472,5 +658,6 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 ## Autorrevisión del plan
 
 - **Cobertura del spec:** P1 (Tarea 8), P2 (Tarea 7), P3 (Tarea 9); buscar con filtro (3 y 8); añadir a lista con cantidad y confirmación al sumar sobre un producto existente (5 y 8); modificar cantidad (9); tachar uno/supermercado/todos, reversibles y sincronizados (5 y 9); limpiar con confirmación (9); quitar un solo producto con deslizar y deshacer (5 y 9); atajo de edición (9); totales con `+ (?)` y columna Otros (6 y 9); total general y presupuesto con restante verde/rojo (11); persistencia (2, 4, 5, 10, 11); APK sin Play Store (10).
+- **Cobertura v1.0.2:** campos complementarios % / precio final y su validación (12 y 14); precio temporal por ítem y persistencia (12 y 13); añadir con descuento y reemplazo al sumar (14); modificar o quitar desde la lista y la tabla (15); totales y presupuesto con precio efectivo (12 y 15); release (16).
 - **Brecha anterior resuelta:** ya existe una función para quitar un solo producto de la lista (deslizar la fila en P3, Tarea 9, apoyada en `ShoppingListProvider.removeProduct` y `restoreItem` de la Tarea 5).
-- **Brecha conocida:** la pestaña "Por supermercado" no tiene gesto de quitar (las celdas de 160 px de ancho ya llevan nombre, cantidad × precio y botón de edición); para quitar un producto hay que hacerlo desde la pestaña "Lista". Si se quiere, añadir una opción "Quitar de la lista" en un menú de la celda reutilizando `removeProduct`.
+- **Brecha conocida:** la pestaña "Por supermercado" no tiene gesto de quitar (las celdas ya llevan nombre, cantidad × precio y botones de edición y descuento); para quitar un producto hay que hacerlo desde la pestaña "Lista". Si se quiere, añadir una opción "Quitar de la lista" en un menú de la celda reutilizando `removeProduct`.

@@ -145,14 +145,18 @@ class _TotalsTitle extends StatelessWidget {
             TextSpan(
               style: theme.textTheme.bodySmall,
               children: [
-                TextSpan(text: 'Presupuesto ${formatPrice(budget)} · Restante: '),
+                TextSpan(
+                  text: 'Presupuesto ${formatPrice(budget)} · Restante: ',
+                ),
                 TextSpan(
                   text: total.remainingLabel(budget),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: total.isOverBudget(budget)
                         ? (dark ? Colors.red.shade300 : Colors.red.shade700)
-                        : (dark ? Colors.green.shade300 : Colors.green.shade700),
+                        : (dark
+                              ? Colors.green.shade300
+                              : Colors.green.shade700),
                   ),
                 ),
               ],

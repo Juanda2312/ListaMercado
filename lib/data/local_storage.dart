@@ -64,17 +64,17 @@ class LocalStorage {
   Future<void> _save(String key, List<Map<String, dynamic>> data) async {
     await _prefs.setString(key, jsonEncode(data));
   }
-  
-  double? loadBudget() {
-  final v = _prefs.get(_budgetKey);
-  return v is num && v.isFinite && v > 0 ? v.toDouble() : null;
-}
 
-Future<void> saveBudget(double? value) async {
-  if (value == null) {
-    await _prefs.remove(_budgetKey);
-  } else {
-    await _prefs.setDouble(_budgetKey, value);
+  double? loadBudget() {
+    final v = _prefs.get(_budgetKey);
+    return v is num && v.isFinite && v > 0 ? v.toDouble() : null;
   }
-}
+
+  Future<void> saveBudget(double? value) async {
+    if (value == null) {
+      await _prefs.remove(_budgetKey);
+    } else {
+      await _prefs.setDouble(_budgetKey, value);
+    }
+  }
 }

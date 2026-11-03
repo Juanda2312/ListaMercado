@@ -23,6 +23,42 @@ void main() {
       expect(r.lineTotal, 3000);
     });
 
+    test('tempPrice overrides the base price in unitPrice and lineTotal', () {
+      const r = ListRow(
+        Product(id: 'p1', name: 'Leche', price: 10000),
+        ShoppingItem(productId: 'p1', quantity: 2, tempPrice: 8500),
+      );
+      expect(r.basePrice, 10000);
+      expect(r.unitPrice, 8500);
+      expect(r.lineTotal, 17000);
+      expect(r.hasDiscount, isTrue);
+      expect(r.discountPercent, 15);
+    });
+
+    test(
+      'discountPercent is null without discount, base price or when not lower',
+      () {
+        const noDiscount = ListRow(
+          Product(id: 'p1', name: 'Leche', price: 10000),
+          ShoppingItem(productId: 'p1'),
+        );
+        const noBase = ListRow(
+          Product(id: 'p1', name: 'Leche'),
+          ShoppingItem(productId: 'p1', tempPrice: 500),
+        );
+        const notLower = ListRow(
+          Product(id: 'p1', name: 'Leche', price: 400),
+          ShoppingItem(productId: 'p1', tempPrice: 500),
+        );
+        expect(noDiscount.discountPercent, isNull);
+        expect(noDiscount.hasDiscount, isFalse);
+        expect(noBase.discountPercent, isNull);
+        expect(noBase.unitPrice, 500);
+        expect(notLower.discountPercent, isNull);
+        expect(notLower.unitPrice, 500);
+      },
+    );
+
     test('without price both are null', () {
       final r = _row(const Product(id: 'p1', name: 'Leche'), quantity: 3);
       expect(r.unitPrice, isNull);
@@ -57,6 +93,21 @@ void main() {
       expect(sections.single.total, 2500);
       expect(sections.single.hasUnpriced, isFalse);
       expect(sections.single.totalLabel, '\$2.500');
+    });
+
+    test('row with tempPrice but no base price counts as priced', () {
+      final sections = buildSections(
+        [
+          const ListRow(
+            Product(id: 'p1', name: 'Pan', supermarketId: 's1'),
+            ShoppingItem(productId: 'p1', quantity: 2, tempPrice: 500),
+          ),
+        ],
+        [ara],
+      );
+      expect(sections.single.total, 1000);
+      expect(sections.single.hasUnpriced, isFalse);
+      expect(sections.single.totalLabel, '\$1.000');
     });
 
     test('unpriced row is excluded and marks label with (?)', () {
@@ -109,26 +160,42 @@ void main() {
     });
   });
 
-group('buildTotal', () {
-  test('sums all priced rows and flags unpriced', () {
-    final t = buildTotal([
-      _row(const Product(id: 'p1', name: 'Leche', price: 1000), quantity: 2),
-      _row(const Product(id: 'p2', name: 'Pan')),
-    ]);
-    expect(t.total, 2000);
-    expect(t.label, '\$2.000 + (?)');
-    expect(t.remainingLabel(5000), '\$3.000 - (?)');
-    expect(t.isOverBudget(5000), isFalse);
-  });
+  group('buildTotal', () {
+    test('sums all priced rows and flags unpriced', () {
+      final t = buildTotal([
+        _row(const Product(id: 'p1', name: 'Leche', price: 1000), quantity: 2),
+        _row(const Product(id: 'p2', name: 'Pan')),
+      ]);
+      expect(t.total, 2000);
+      expect(t.label, '\$2.000 + (?)');
+      expect(t.remainingLabel(5000), '\$3.000 - (?)');
+      expect(t.isOverBudget(5000), isFalse);
+    });
 
-  test('negative remaining and no unpriced', () {
-    final t = buildTotal([
-      _row(const Product(id: 'p1', name: 'Leche', price: 1000), quantity: 6),
-    ]);
-    expect(t.remainingLabel(5000), '-\$1.000');
-    expect(t.isOverBudget(5000), isTrue);
+    test('discounted rows use the temp price and do not flag unpriced', () {
+      final t = buildTotal([
+        const ListRow(
+          Product(id: 'p1', name: 'Leche', price: 10000),
+          ShoppingItem(productId: 'p1', quantity: 2, tempPrice: 8500),
+        ),
+        const ListRow(
+          Product(id: 'p2', name: 'Pan'),
+          ShoppingItem(productId: 'p2', tempPrice: 500),
+        ),
+      ]);
+      expect(t.total, 17500);
+      expect(t.hasUnpriced, isFalse);
+      expect(t.label, '\$17.500');
+    });
+
+    test('negative remaining and no unpriced', () {
+      final t = buildTotal([
+        _row(const Product(id: 'p1', name: 'Leche', price: 1000), quantity: 6),
+      ]);
+      expect(t.remainingLabel(5000), '-\$1.000');
+      expect(t.isOverBudget(5000), isTrue);
+    });
   });
-});
 
   group('buildSections', () {
     test('supermarkets are ordered by name, Otros is last', () {

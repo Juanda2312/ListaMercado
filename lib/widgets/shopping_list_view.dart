@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'discount_dialog.dart';
 import '../logic/list_grouping.dart';
 import '../providers/products_provider.dart';
 import '../providers/shopping_list_provider.dart';
 import '../providers/supermarkets_provider.dart';
 import '../screens/product_form_screen.dart';
 import '../utils/price_format.dart';
+import '../utils/discount.dart';
 import 'quantity_stepper.dart';
 
 class ShoppingListView extends StatelessWidget {
@@ -81,6 +83,8 @@ class _ListRowTile extends StatelessWidget {
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.5);
     final unit = row.unitPrice;
     final total = row.lineTotal;
+    final base = row.basePrice;
+    final percent = row.discountPercent;
 
     return Card(
       key: Key('list-row-${product.id}'),
@@ -109,6 +113,15 @@ class _ListRowTile extends StatelessWidget {
                         color: checked ? muted : null,
                       ),
                     ),
+                  ),
+                  IconButton(
+                    key: Key('edit-discount-${product.id}'),
+                    tooltip: 'Descuento',
+                    icon: Icon(
+                      Icons.sell_outlined,
+                      color: row.hasDiscount ? theme.colorScheme.primary : null,
+                    ),
+                    onPressed: () => showDiscountDialog(context, row),
                   ),
                   IconButton(
                     key: Key('edit-product-${product.id}'),
@@ -145,12 +158,39 @@ class _ListRowTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          'c/u ${unit == null ? '—' : formatPrice(unit)}',
+                        Text.rich(
+                          key: Key('row-unit-${product.id}'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: checked ? muted : null,
+                          TextSpan(
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: checked ? muted : null,
+                            ),
+                            children: [
+                              const TextSpan(text: 'c/u '),
+                              if (row.hasDiscount && base != null) ...[
+                                TextSpan(
+                                  text: formatPrice(base),
+                                  style: const TextStyle(
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                                const TextSpan(text: ' '),
+                              ],
+                              TextSpan(
+                                text: unit == null ? '—' : formatPrice(unit),
+                              ),
+                              if (percent != null)
+                                TextSpan(
+                                  text: ' -${formatPercent(percent)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: checked
+                                        ? null
+                                        : theme.colorScheme.primary,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                         Text(

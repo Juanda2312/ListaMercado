@@ -1,6 +1,7 @@
 import '../models/product.dart';
 import '../models/shopping_item.dart';
 import '../models/supermarket.dart';
+import '../utils/discount.dart';
 import '../utils/price_format.dart';
 import '../utils/text_normalize.dart';
 
@@ -10,10 +11,25 @@ class ListRow {
 
   const ListRow(this.product, this.item);
 
-  double? get unitPrice => product.price;
+  /// Precio base del producto (sin descuento).
+  double? get basePrice => product.price;
+
+  /// Precio efectivo: el precio temporal si existe; si no, el del producto.
+  double? get unitPrice => item.tempPrice ?? product.price;
+
+  bool get hasDiscount => item.tempPrice != null;
+
+  /// Porcentaje de descuento contra el precio base; `null` si no hay
+  /// descuento, no hay precio base o el precio temporal no es menor que él.
+  double? get discountPercent {
+    final base = product.price;
+    final temp = item.tempPrice;
+    if (base == null || temp == null) return null;
+    return percentFromPrice(base, temp);
+  }
 
   double? get lineTotal {
-    final price = product.price;
+    final price = unitPrice;
     return price == null ? null : price * item.quantity;
   }
 }
@@ -93,9 +109,8 @@ List<SupermarketSection> buildSections(
       ),
     );
   }
-  
+
   return sections;
-  
 }
 
 class ListTotal {

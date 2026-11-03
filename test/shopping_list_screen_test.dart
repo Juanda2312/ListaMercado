@@ -114,6 +114,162 @@ Future<void> _swipe(WidgetTester tester, String productId) async {
 final _confirm = find.widgetWithText(FilledButton, 'Confirmar');
 
 void main() {
+  group('descuento desde la lista', () {
+    final percentField = find.byKey(const Key('discount-percent'));
+    final priceField = find.byKey(const Key('discount-price'));
+    final save = find.widgetWithText(FilledButton, 'Guardar');
+
+    Future<void> openFromList(WidgetTester tester, String id) async {
+      await tester.tap(find.byKey(Key('edit-discount-$id')));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> openFromTable(WidgetTester tester, String id) async {
+      await tester.tap(find.byKey(Key('discount-cell-$id')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('saving a % updates line, section, grand total and remaining '
+        'budget', (tester) async {
+      final app = await _pump(tester);
+      final id = _id(app, 'Leche');
+      await app.shoppingList.setBudget(5000);
+      await tester.pumpAndSettle();
+
+      await openFromList(tester, id);
+      await tester.enterText(percentField, '10');
+      await tester.pump();
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      expect(
+        app.shoppingList.items.firstWhere((i) => i.productId == id).tempPrice,
+        900,
+      );
+      expect(_text(tester, Key('row-total-$id')), '\$1.800');
+      expect(find.textContaining('-10%', findRichText: true), findsOneWidget);
+      expect(_text(tester, const Key('list-total')), 'Total: \$4.500 + (?)');
+      expect(
+        find.textContaining('\$500 - (?)', findRichText: true),
+        findsOneWidget,
+      );
+      await _goToTable(tester);
+      expect(_text(tester, const Key('section-total-Ara')), '\$2.300');
+    });
+
+    testWidgets(
+      'editing preloads both fields; Quitar restores the base price',
+      (tester) async {
+        final app = await _pump(tester);
+        final id = _id(app, 'Leche');
+        await app.shoppingList.setTempPrice(id, 900);
+        await tester.pumpAndSettle();
+
+        await openFromList(tester, id);
+        expect(tester.widget<TextField>(priceField).controller!.text, '900');
+        expect(tester.widget<TextField>(percentField).controller!.text, '10');
+
+        await tester.tap(find.text('Quitar'));
+        await tester.pumpAndSettle();
+
+        expect(
+          app.shoppingList.items.firstWhere((i) => i.productId == id).tempPrice,
+          isNull,
+        );
+        expect(_text(tester, Key('row-total-$id')), '\$2.000');
+      },
+    );
+
+    testWidgets('Quitar is hidden without a discount and Guardar is disabled '
+        'while empty or invalid', (tester) async {
+      final app = await _pump(tester);
+      await openFromList(tester, _id(app, 'Leche'));
+
+      expect(find.text('Quitar'), findsNothing);
+      expect(tester.widget<FilledButton>(save).onPressed, isNull);
+
+      await tester.enterText(percentField, '100');
+      await tester.pump();
+      expect(find.text('Descuento inválido'), findsOneWidget);
+      expect(tester.widget<FilledButton>(save).onPressed, isNull);
+
+      await tester.enterText(percentField, '20');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
+    });
+
+    testWidgets('product without base price: a final price stops counting it '
+        'as (?)', (tester) async {
+      final app = await _pump(tester);
+      final id = _id(app, 'Café');
+
+      await openFromList(tester, id);
+      expect(tester.widget<TextField>(percentField).enabled, isFalse);
+      await tester.enterText(priceField, '1500');
+      await tester.pump();
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      expect(_text(tester, Key('row-total-$id')), '\$1.500');
+      expect(_text(tester, const Key('list-total')), 'Total: \$6.200');
+      await _goToTable(tester);
+      expect(_text(tester, const Key('section-total-Éxito')), '\$3.500');
+    });
+
+    testWidgets('the table cell shows the discounted price and its button '
+        'works', (tester) async {
+      final app = await _pump(tester);
+      final id = _id(app, 'Leche');
+      await app.shoppingList.setTempPrice(id, 900);
+      await _goToTable(tester);
+      expect(find.text('2 × \$900 (-10%)'), findsOneWidget);
+
+      await openFromTable(tester, id);
+      await tester.enterText(percentField, '20');
+      await tester.pump();
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 × \$800 (-20%)'), findsOneWidget);
+      expect(_text(tester, const Key('section-total-Ara')), '\$2.100');
+    });
+
+    testWidgets('swiping a row with discount and tapping Deshacer restores '
+        'the discount', (tester) async {
+      final app = await _pump(tester);
+      final id = _id(app, 'Leche');
+      await app.shoppingList.setTempPrice(id, 900);
+      await tester.pumpAndSettle();
+
+      await _swipe(tester, id);
+      await tester.tap(find.text('Deshacer'));
+      await tester.pumpAndSettle();
+
+      expect(
+        app.shoppingList.items.firstWhere((i) => i.productId == id).tempPrice,
+        900,
+      );
+      expect(_text(tester, Key('row-total-$id')), '\$1.800');
+    });
+
+    testWidgets('striking an item with discount does not change totals', (
+      tester,
+    ) async {
+      final app = await _pump(tester);
+      final id = _id(app, 'Leche');
+      await app.shoppingList.setTempPrice(id, 900);
+      await tester.pumpAndSettle();
+      expect(_text(tester, const Key('list-total')), 'Total: \$4.500 + (?)');
+
+      await tester.tap(find.byKey(Key('row-name-$id')));
+      await tester.pumpAndSettle();
+
+      expect(_checked(app, 'Leche'), isTrue);
+      expect(_text(tester, const Key('list-total')), 'Total: \$4.500 + (?)');
+      await _goToTable(tester);
+      expect(_text(tester, const Key('section-total-Ara')), '\$2.300');
+    });
+  });
   group('tachado', () {
     testWidgets(
       'tapping a row strikes the name in both views; again unstrikes',
@@ -331,57 +487,67 @@ void main() {
     });
   });
 
-group('total y presupuesto', () {
-  Color? colorOf(WidgetTester tester) {
-    final t = tester.widget<Text>(find.byKey(const Key('list-budget')));
-    return (t.textSpan! as TextSpan).children!.last.style!.color;
-  }
+  group('total y presupuesto', () {
+    Color? colorOf(WidgetTester tester) {
+      final t = tester.widget<Text>(find.byKey(const Key('list-budget')));
+      return (t.textSpan! as TextSpan).children!.last.style!.color;
+    }
 
-  Future<void> setBudget(WidgetTester tester, String value) async {
-    await tester.tap(find.byKey(const Key('budget-button')));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('budget-input')), value);
-    await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
-    await tester.pumpAndSettle();
-  }
+    Future<void> setBudget(WidgetTester tester, String value) async {
+      await tester.tap(find.byKey(const Key('budget-button')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('budget-input')), value);
+      await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
+      await tester.pumpAndSettle();
+    }
 
-  testWidgets('app bar shows the grand total with (?)', (tester) async {
-    await _pump(tester);
-    expect(_text(tester, const Key('list-total')), 'Total: \$4.700 + (?)');
-    expect(find.byKey(const Key('list-budget')), findsNothing);
+    testWidgets('app bar shows the grand total with (?)', (tester) async {
+      await _pump(tester);
+      expect(_text(tester, const Key('list-total')), 'Total: \$4.700 + (?)');
+      expect(find.byKey(const Key('list-budget')), findsNothing);
+    });
+
+    testWidgets('budget above total shows green remaining', (tester) async {
+      await _pump(tester);
+      await setBudget(tester, '5.000');
+      expect(
+        find.textContaining('\$300 - (?)', findRichText: true),
+        findsOneWidget,
+      );
+      expect(colorOf(tester), Colors.green.shade700);
+    });
+
+    testWidgets('budget below total shows red negative remaining', (
+      tester,
+    ) async {
+      await _pump(tester);
+      await setBudget(tester, '4000');
+      expect(
+        find.textContaining('-\$700 - (?)', findRichText: true),
+        findsOneWidget,
+      );
+      expect(colorOf(tester), Colors.red.shade700);
+    });
+
+    testWidgets('invalid budget keeps dialog open; Quitar removes it', (
+      tester,
+    ) async {
+      final app = await _pump(tester);
+      await setBudget(tester, 'abc');
+      expect(find.text('Precio inválido'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('budget-input')), '5000');
+      await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
+      await tester.pumpAndSettle();
+      expect(app.shoppingList.budget, 5000);
+
+      await tester.tap(find.byKey(const Key('budget-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Quitar'));
+      await tester.pumpAndSettle();
+      expect(app.shoppingList.budget, isNull);
+      expect(find.byKey(const Key('list-budget')), findsNothing);
+    });
   });
-
-  testWidgets('budget above total shows green remaining', (tester) async {
-    await _pump(tester);
-    await setBudget(tester, '5.000');
-    expect(find.textContaining('\$300 - (?)', findRichText: true), findsOneWidget);
-    expect(colorOf(tester), Colors.green.shade700);
-  });
-
-  testWidgets('budget below total shows red negative remaining', (tester) async {
-    await _pump(tester);
-    await setBudget(tester, '4000');
-    expect(find.textContaining('-\$700 - (?)', findRichText: true), findsOneWidget);
-    expect(colorOf(tester), Colors.red.shade700);
-  });
-
-  testWidgets('invalid budget keeps dialog open; Quitar removes it', (tester) async {
-    final app = await _pump(tester);
-    await setBudget(tester, 'abc');
-    expect(find.text('Precio inválido'), findsOneWidget);
-    await tester.enterText(find.byKey(const Key('budget-input')), '5000');
-    await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
-    await tester.pumpAndSettle();
-    expect(app.shoppingList.budget, 5000);
-
-    await tester.tap(find.byKey(const Key('budget-button')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Quitar'));
-    await tester.pumpAndSettle();
-    expect(app.shoppingList.budget, isNull);
-    expect(find.byKey(const Key('list-budget')), findsNothing);
-  });
-});
 
   group('quitar un solo producto (deslizar)', () {
     testWidgets(
