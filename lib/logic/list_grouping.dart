@@ -93,5 +93,41 @@ List<SupermarketSection> buildSections(
       ),
     );
   }
+  
   return sections;
+  
+}
+
+class ListTotal {
+  final double total;
+  final bool hasUnpriced;
+
+  const ListTotal(this.total, this.hasUnpriced);
+
+  String get label =>
+      hasUnpriced ? '${formatPrice(total)} + (?)' : formatPrice(total);
+
+  double remaining(double budget) => budget - total;
+
+  bool isOverBudget(double budget) => remaining(budget) < 0;
+
+  String remainingLabel(double budget) {
+    final r = remaining(budget);
+    final base = r < 0 ? '-${formatPrice(-r)}' : formatPrice(r);
+    return hasUnpriced ? '$base - (?)' : base;
+  }
+}
+
+ListTotal buildTotal(List<ListRow> rows) {
+  var sum = 0.0;
+  var unpriced = false;
+  for (final row in rows) {
+    final line = row.lineTotal;
+    if (line == null) {
+      unpriced = true;
+    } else {
+      sum += line;
+    }
+  }
+  return ListTotal(sum, unpriced);
 }

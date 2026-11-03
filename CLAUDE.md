@@ -10,6 +10,8 @@
 
 **Spec:** sección "Requisitos" de este mismo archivo.
 
+**Versiones:** 1.0.0 = MVP (Tareas 0–10). 1.0.1 = total general y presupuesto en la barra de la lista (Tarea 11).
+
 ## Restricciones globales
 
 - Solo Android (`--platforms android`). Sin internet, sin API, sin permiso `INTERNET` en el APK release.
@@ -26,11 +28,12 @@
 - Cada supermercado es una **columna** de la tabla de la lista.
 - Dependencia de desarrollo permitida: flutter_launcher_icons (solo para generar el ícono; no entra en el APK).
 
-## Requisitos (resumen del MVP)
+## Requisitos (resumen)
 
 **P1 – Productos:** pantalla con nombre, supermercado y precio. Añadir, modificar, eliminar, buscar (con filtro por supermercado) y añadir a la lista con cantidad (si el producto ya está en la lista, pide confirmación para sumar).
 **P2 – Supermercados:** pantalla con solo el nombre. Añadir, modificar, eliminar.
 **P3 – Lista de mercado:** lista (nombre, supermercado, cantidad, precio unitario, total) y tabla por supermercados (columna Otros). Modificar cantidad; tachar/destachar un producto (sincronizado entre lista y tabla); tachar/destachar todos los de un supermercado; tachar/destachar todos; limpiar la lista; quitar un solo producto de la lista (deslizando la fila, con opción de deshacer); botón en cada producto que abre su edición (acceso directo a P1).
+**P3 – Barra superior (v1.0.1):** total general de la lista (`TOTAL + (?)` si hay productos sin precio) y presupuesto opcional; restante = presupuesto − total, mostrado como `RESTANTE - (?)` si hay productos sin precio, en verde si ≥ 0 y en rojo si es negativo. El presupuesto se guarda en `ShoppingListProvider` (`budget_v1`) y no se borra al limpiar la lista.
 
 ## Decisiones de diseño (cerradas)
 
@@ -45,6 +48,7 @@
 - **Precio:** vacío = sin precio; debe ser > 0. Acepta `,` o `.` como decimal; un punto seguido de exactamente 3 dígitos (`12.500`) se interpreta como separador de miles. Se muestra como `$12.500` (miles con punto, decimales con coma solo si los hay, máximo 2).
 - **La tabla de P3** es un conjunto de columnas con scroll horizontal (una por supermercado con productos, `Otros` al final). Lista y tabla son dos pestañas internas de P3 que leen el mismo `ShoppingListProvider`, por eso el tachado y la eliminación se sincronizan solos.
 - **IDs:** `DateTime.now().microsecondsSinceEpoch.toString()`.
+- **Total general y presupuesto (v1.0.1):** el total general suma todas las filas con precio (las tachadas también cuentan, igual que en los totales por supermercado). El presupuesto vive en `ShoppingListProvider` (no hay provider nuevo, así `AppProviders` y los `MultiProvider` no cambian), se guarda en `shared_preferences` con la clave `budget_v1` (un `double`), es opcional y debe ser > 0 (mismas reglas de parseo que el precio). "Limpiar lista" no lo borra. El restante se muestra solo si hay presupuesto: verde si ≥ 0, rojo si < 0; con productos sin precio lleva el sufijo ` - (?)`.
 
 ## Arquitectura
 
@@ -75,14 +79,14 @@ lib/
 │   ├── product.dart
 │   └── shopping_item.dart
 ├── data/
-│   └── local_storage.dart            # load/save JSON de las 3 colecciones
+│   └── local_storage.dart            # load/save JSON de las 3 colecciones + presupuesto
 ├── providers/
 │   ├── supermarkets_provider.dart
 │   ├── products_provider.dart
-│   └── shopping_list_provider.dart
+│   └── shopping_list_provider.dart   # lista + presupuesto
 ├── logic/
 │   ├── product_search.dart           # searchProducts + kNoSupermarketFilter
-│   └── list_grouping.dart            # ListRow, SupermarketSection, buildRows, buildSections
+│   └── list_grouping.dart            # ListRow, SupermarketSection, ListTotal, buildRows, buildSections, buildTotal
 ├── utils/
 │   ├── price_format.dart             # parsePrice, validatePriceInput, formatPrice
 │   └── text_normalize.dart           # normalizeText
@@ -91,7 +95,7 @@ lib/
 │   ├── products_screen.dart          # P1
 │   ├── product_form_screen.dart      # alta/edición de producto (usada por P1 y por el atajo de P3)
 │   ├── supermarkets_screen.dart      # P2
-│   └── shopping_list_screen.dart     # P3 (TabBar: Lista | Por supermercado + acciones masivas)
+│   └── shopping_list_screen.dart     # P3 (barra con total/presupuesto, TabBar: Lista | Por supermercado + acciones masivas)
 └── widgets/
     ├── confirm_dialog.dart
     ├── quantity_stepper.dart
@@ -113,6 +117,7 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 4. **Almacenamiento vacío o corrupto** (primer arranque, JSON dañado, ítem de lista cuyo producto ya no existe) → la app abre con datos vacíos o salta el elemento dañado, sin crashear. (Tareas 2 y 6)
 5. **Añadir dos veces el mismo producto a la lista** → una sola fila con cantidades sumadas, nunca duplicados; la segunda vez pide confirmación y, si se cancela, la cantidad existente no cambia. (Tareas 5 y 8)
 6. **Quitar un producto de la lista** no borra el producto del catálogo, actualiza totales y tabla, y "Deshacer" lo restaura con su cantidad y tachado originales, sin duplicar si el producto fue añadido de nuevo entre tanto. (Tareas 5 y 9)
+7. **Presupuesto:** valor inválido, cero o negativo no se guarda; un valor corrupto en almacenamiento se ignora (sin presupuesto); el restante cambia de verde a rojo exactamente al pasar de ≥ 0 a < 0; "Limpiar lista" no lo borra. (Tarea 11)
 
 ---
 
@@ -407,7 +412,7 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 
 ---
 
-### Tarea 10: Pulido y APK release
+### Tarea 10: Pulido y APK release (v1.0.0)
 
 **Archivos:**
 - Modificar: `android/app/build.gradle(.kts)` (firma release), `android/.gitignore`
@@ -427,6 +432,36 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 
 ---
 
+### Tarea 11: Total general y presupuesto en la barra de la lista (v1.0.1)
+
+**Archivos:**
+- Modificar: `lib/data/local_storage.dart`, `lib/providers/shopping_list_provider.dart`, `lib/logic/list_grouping.dart`, `lib/screens/shopping_list_screen.dart`, `pubspec.yaml` (versión `1.0.1+2`)
+- Test: `test/list_grouping_test.dart`, `test/providers_test.dart` (grupo `shopping list`), `test/shopping_list_screen_test.dart`
+
+**Interfaces:**
+- Consume: `ShoppingListProvider`, `buildRows`, `formatPrice`, `parsePrice`.
+- Produce:
+  - `LocalStorage`: clave `budget_v1`; `double? loadBudget()` (devuelve `null` si no existe, no es número, no es finito o es ≤ 0); `Future<void> saveBudget(double? value)` (`null` borra la clave).
+  - `ShoppingListProvider`: `double? get budget` (cargado en el constructor) y `Future<void> setBudget(double? value)`; `null` quita el presupuesto; valores no positivos o no finitos se ignoran. `clear()` no toca el presupuesto.
+  - `class ListTotal { final double total; final bool hasUnpriced; String get label; double remaining(double budget); bool isOverBudget(double budget); String remainingLabel(double budget); }` — `label` = `formatPrice(total)` o `'${formatPrice(total)} + (?)'`; `remainingLabel` = restante formateado (negativo como `-$700`) más `' - (?)'` si `hasUnpriced`.
+  - `ListTotal buildTotal(List<ListRow> rows)` — suma las filas con precio (tachadas incluidas) y marca `hasUnpriced` si alguna no tiene precio.
+  - `ShoppingListScreen`: el título de la `AppBar` pasa a ser una columna con `Total: <label>` (`Key('list-total')`) y, solo si hay presupuesto, `Presupuesto <monto> · Restante: <remainingLabel>` (`Key('list-budget')`), con el restante en verde si ≥ 0 y en rojo si < 0 (tonos más claros en tema oscuro). Nuevo botón de cartera (`Key('budget-button')`) en las acciones que abre un diálogo (`Key('budget-input')`) con "Cancelar", "Quitar" (solo si ya hay presupuesto) y "Guardar"; un monto inválido deja el diálogo abierto con el error `Precio inválido`.
+
+- [ ] **Paso 1: Test que falla:**
+  - `buildTotal sums all priced rows and flags unpriced`: 2×1000 + fila sin precio → `total == 2000`, `label == '\$2.000 + (?)'`, `remainingLabel(5000) == '\$3.000 - (?)'`, `isOverBudget(5000) == false`.
+  - `buildTotal negative remaining and no unpriced`: 6×1000 con presupuesto 5000 → `remainingLabel(5000) == '-\$1.000'`, `isOverBudget(5000) == true`.
+  - `budget persists, can be removed, and survives clear`. **(RF7)**
+  - `setBudget ignores non-positive values`. **(RF7)**
+  - Pantalla (datos de prueba: total `$4.700 + (?)`): `app bar shows the grand total with (?)` y no hay `list-budget`; `budget above total shows green remaining` (5.000 → `$300 - (?)`); `budget below total shows red negative remaining` (4000 → `-$700 - (?)`); `invalid budget keeps dialog open; Quitar removes it`. **(RF7)**
+- [ ] **Paso 2:** `flutter test` → FALLA en los tests nuevos.
+- [ ] **Paso 3:** Implementar. Ajustar `toolbarHeight` de la `AppBar` (72) para que quepan las dos líneas. Los textos usan `maxLines: 1` y `TextOverflow.ellipsis`.
+- [ ] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
+- [ ] **Paso 5:** Verificación manual: añadir productos con y sin precio → ver `Total: $X + (?)`; fijar un presupuesto mayor (verde) y uno menor (rojo con `-`); quitar el presupuesto; limpiar la lista y confirmar que el presupuesto se conserva; cerrar la app desde recientes y reabrir → persiste. Probar en tema oscuro.
+- [ ] **Paso 6:** Subir la versión a `1.0.1+2` en `pubspec.yaml` y compilar el release como en la Tarea 10 (mismo keystore, para conservar los datos al actualizar).
+- [ ] **Paso 7:** Commit: `feat: add list grand total and budget with remaining in app bar`
+
+---
+
 ## Convenciones de trabajo
 
 - Un commit por tarea (mensajes en inglés, estilo `feat:`/`chore:`/`fix:`).
@@ -436,6 +471,6 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 
 ## Autorrevisión del plan
 
-- **Cobertura del spec:** P1 (Tarea 8), P2 (Tarea 7), P3 (Tarea 9); buscar con filtro (3 y 8); añadir a lista con cantidad y confirmación al sumar sobre un producto existente (5 y 8); modificar cantidad (9); tachar uno/supermercado/todos, reversibles y sincronizados (5 y 9); limpiar con confirmación (9); quitar un solo producto con deslizar y deshacer (5 y 9); atajo de edición (9); totales con `+ (?)` y columna Otros (6 y 9); persistencia (2, 4, 5, 10); APK sin Play Store (10).
+- **Cobertura del spec:** P1 (Tarea 8), P2 (Tarea 7), P3 (Tarea 9); buscar con filtro (3 y 8); añadir a lista con cantidad y confirmación al sumar sobre un producto existente (5 y 8); modificar cantidad (9); tachar uno/supermercado/todos, reversibles y sincronizados (5 y 9); limpiar con confirmación (9); quitar un solo producto con deslizar y deshacer (5 y 9); atajo de edición (9); totales con `+ (?)` y columna Otros (6 y 9); total general y presupuesto con restante verde/rojo (11); persistencia (2, 4, 5, 10, 11); APK sin Play Store (10).
 - **Brecha anterior resuelta:** ya existe una función para quitar un solo producto de la lista (deslizar la fila en P3, Tarea 9, apoyada en `ShoppingListProvider.removeProduct` y `restoreItem` de la Tarea 5).
 - **Brecha conocida:** la pestaña "Por supermercado" no tiene gesto de quitar (las celdas de 160 px de ancho ya llevan nombre, cantidad × precio y botón de edición); para quitar un producto hay que hacerlo desde la pestaña "Lista". Si se quiere, añadir una opción "Quitar de la lista" en un menú de la celda reutilizando `removeProduct`.

@@ -8,11 +8,22 @@ import '../models/shopping_item.dart';
 class ShoppingListProvider extends ChangeNotifier {
   ShoppingListProvider({required LocalStorage storage})
     : _storage = storage,
-      _items = storage.loadShoppingItems();
+      _items = storage.loadShoppingItems(),
+      _budget = storage.loadBudget();
 
   final LocalStorage _storage;
   List<ShoppingItem> _items;
+  double? _budget;
+  double? get budget => _budget;
 
+  /// `null` quita el presupuesto. Valores no positivos se ignoran.
+  Future<void> setBudget(double? value) async {
+    if (value != null && !(value > 0 && value.isFinite)) return;
+    _budget = value;
+    notifyListeners();
+    await _storage.saveBudget(value);
+  }
+  
   List<ShoppingItem> get items => UnmodifiableListView(_items);
 
   int? quantityOf(String productId) {

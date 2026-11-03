@@ -241,6 +241,7 @@ void main() {
       expect(calls, 1);
     });
   });
+
   group('shopping list', () {
     late LocalStorage storage;
     late ShoppingListProvider list;
@@ -451,5 +452,23 @@ void main() {
       await list.toggleChecked('p1');
       expect(calls, 3);
     });
+    test('budget persists, can be removed, and survives clear', () async {
+      expect(list.budget, isNull);
+      await list.setBudget(5000);
+      await list.addProduct('p1', 1);
+      await list.clear();
+      expect(ShoppingListProvider(storage: storage).budget, 5000);
+      await list.setBudget(null);
+      expect(ShoppingListProvider(storage: storage).budget, isNull);
+    });
+
+    test('setBudget ignores non-positive values', () async {
+      await list.setBudget(5000);
+      await list.setBudget(0);
+      await list.setBudget(-1);
+      expect(list.budget, 5000);
+    });
   });
+
+  
 }

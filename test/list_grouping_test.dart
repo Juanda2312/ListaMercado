@@ -109,6 +109,27 @@ void main() {
     });
   });
 
+group('buildTotal', () {
+  test('sums all priced rows and flags unpriced', () {
+    final t = buildTotal([
+      _row(const Product(id: 'p1', name: 'Leche', price: 1000), quantity: 2),
+      _row(const Product(id: 'p2', name: 'Pan')),
+    ]);
+    expect(t.total, 2000);
+    expect(t.label, '\$2.000 + (?)');
+    expect(t.remainingLabel(5000), '\$3.000 - (?)');
+    expect(t.isOverBudget(5000), isFalse);
+  });
+
+  test('negative remaining and no unpriced', () {
+    final t = buildTotal([
+      _row(const Product(id: 'p1', name: 'Leche', price: 1000), quantity: 6),
+    ]);
+    expect(t.remainingLabel(5000), '-\$1.000');
+    expect(t.isOverBudget(5000), isTrue);
+  });
+});
+
   group('buildSections', () {
     test('supermarkets are ordered by name, Otros is last', () {
       final sections = buildSections(

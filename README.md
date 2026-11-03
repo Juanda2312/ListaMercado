@@ -12,6 +12,7 @@ App Android 100% local para organizar las compras del mercado: gestiona producto
   - Cambiar cantidades, limpiar la lista y quitar un producto deslizando la fila (con opción de deshacer).
   - Si un supermercado tiene productos sin precio, su total se muestra como `$X + (?)`.
   - Añadir un producto que ya está en la lista pide confirmación antes de sumar la cantidad.
+  - **Total y presupuesto (v1.0.1):** la barra superior muestra el total general de la lista (`$X + (?)` si hay productos sin precio). Con el icono de cartera se fija un presupuesto opcional y la barra muestra el restante (presupuesto − total), como `$RESTANTE - (?)` si hay productos sin precio. El restante se ve en verde si es positivo o cero y en rojo si es negativo. El presupuesto se conserva al limpiar la lista y se puede cambiar o quitar cuando se quiera.
 
 ## Descargar e instalar
 
@@ -33,7 +34,7 @@ lib/
 ├── main.dart, app.dart, app_providers.dart
 ├── models/      # Supermarket, Product, ShoppingItem
 ├── data/        # LocalStorage (shared_preferences)
-├── providers/   # SupermarketsProvider, ProductsProvider, ShoppingListProvider
+├── providers/   # SupermarketsProvider, ProductsProvider, ShoppingListProvider (incluye el presupuesto)
 ├── logic/       # búsqueda, agrupación y totales (funciones puras)
 ├── utils/       # parseo/formato de precios, normalización de texto
 ├── screens/     # Productos, formulario, Supermercados, Lista

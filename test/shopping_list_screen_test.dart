@@ -331,6 +331,58 @@ void main() {
     });
   });
 
+group('total y presupuesto', () {
+  Color? colorOf(WidgetTester tester) {
+    final t = tester.widget<Text>(find.byKey(const Key('list-budget')));
+    return (t.textSpan! as TextSpan).children!.last.style!.color;
+  }
+
+  Future<void> setBudget(WidgetTester tester, String value) async {
+    await tester.tap(find.byKey(const Key('budget-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('budget-input')), value);
+    await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('app bar shows the grand total with (?)', (tester) async {
+    await _pump(tester);
+    expect(_text(tester, const Key('list-total')), 'Total: \$4.700 + (?)');
+    expect(find.byKey(const Key('list-budget')), findsNothing);
+  });
+
+  testWidgets('budget above total shows green remaining', (tester) async {
+    await _pump(tester);
+    await setBudget(tester, '5.000');
+    expect(find.textContaining('\$300 - (?)', findRichText: true), findsOneWidget);
+    expect(colorOf(tester), Colors.green.shade700);
+  });
+
+  testWidgets('budget below total shows red negative remaining', (tester) async {
+    await _pump(tester);
+    await setBudget(tester, '4000');
+    expect(find.textContaining('-\$700 - (?)', findRichText: true), findsOneWidget);
+    expect(colorOf(tester), Colors.red.shade700);
+  });
+
+  testWidgets('invalid budget keeps dialog open; Quitar removes it', (tester) async {
+    final app = await _pump(tester);
+    await setBudget(tester, 'abc');
+    expect(find.text('Precio inválido'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('budget-input')), '5000');
+    await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
+    await tester.pumpAndSettle();
+    expect(app.shoppingList.budget, 5000);
+
+    await tester.tap(find.byKey(const Key('budget-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Quitar'));
+    await tester.pumpAndSettle();
+    expect(app.shoppingList.budget, isNull);
+    expect(find.byKey(const Key('list-budget')), findsNothing);
+  });
+});
+
   group('quitar un solo producto (deslizar)', () {
     testWidgets(
       'swiping a row removes only that product from list view and table view',
