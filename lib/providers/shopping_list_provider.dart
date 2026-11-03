@@ -23,7 +23,7 @@ class ShoppingListProvider extends ChangeNotifier {
     notifyListeners();
     await _storage.saveBudget(value);
   }
-  
+
   List<ShoppingItem> get items => UnmodifiableListView(_items);
 
   int? quantityOf(String productId) {

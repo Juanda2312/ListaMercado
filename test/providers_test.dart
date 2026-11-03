@@ -469,6 +469,4 @@ void main() {
       expect(list.budget, 5000);
     });
   });
-
-  
 }
