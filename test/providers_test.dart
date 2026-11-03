@@ -251,6 +251,83 @@ void main() {
       list = ShoppingListProvider(storage: storage);
     });
 
+    test('addProduct with tempPrice stores it on a new item', () async {
+      await list.addProduct('p1', 2, tempPrice: 8500);
+      expect(list.items.single.quantity, 2);
+      expect(list.items.single.tempPrice, 8500);
+    });
+
+    test(
+      'addProduct without tempPrice keeps the existing one when summing',
+      () async {
+        await list.addProduct('p1', 1, tempPrice: 8500);
+        await list.addProduct('p1', 2);
+        expect(list.items.single.quantity, 3);
+        expect(list.items.single.tempPrice, 8500);
+      },
+    );
+
+    test('addProduct with tempPrice replaces the existing one', () async {
+      await list.addProduct('p1', 1, tempPrice: 8500);
+      await list.addProduct('p1', 1, tempPrice: 7000);
+      expect(list.items.single.quantity, 2);
+      expect(list.items.single.tempPrice, 7000);
+    });
+
+    test('addProduct ignores a non-positive tempPrice', () async {
+      await list.addProduct('p1', 1, tempPrice: 0);
+      expect(list.items.single.tempPrice, isNull);
+      await list.addProduct('p1', 1, tempPrice: 8500);
+      await list.addProduct('p1', 1, tempPrice: -3);
+      expect(list.items.single.tempPrice, 8500);
+    });
+
+    test('setTempPrice sets, changes and removes the discount', () async {
+      await list.addProduct('p1', 1);
+      await list.setTempPrice('p1', 8500);
+      expect(list.items.single.tempPrice, 8500);
+      await list.setTempPrice('p1', 7000);
+      expect(list.items.single.tempPrice, 7000);
+      await list.setTempPrice('p1', null);
+      expect(list.items.single.tempPrice, isNull);
+    });
+
+    test('setTempPrice ignores non-positive values and unknown ids', () async {
+      await list.addProduct('p1', 1);
+      await list.setTempPrice('p1', 8500);
+      var calls = 0;
+      list.addListener(() => calls++);
+      await list.setTempPrice('p1', 0);
+      await list.setTempPrice('p1', -1);
+      await list.setTempPrice('p1', double.infinity);
+      await list.setTempPrice('nope', 5000);
+      expect(list.items.single.tempPrice, 8500);
+      expect(list.items.length, 1);
+      expect(calls, 0);
+    });
+
+    test('quantity and checked changes keep the tempPrice', () async {
+      await list.addProduct('p1', 1, tempPrice: 8500);
+      await list.setQuantity('p1', 4);
+      await list.toggleChecked('p1');
+      expect(list.items.single.tempPrice, 8500);
+    });
+
+    test('tempPrice persists across instances', () async {
+      await list.addProduct('p1', 2, tempPrice: 8500);
+      final reloaded = ShoppingListProvider(storage: storage);
+      expect(reloaded.items.single.tempPrice, 8500);
+    });
+
+    test('restoreItem keeps the tempPrice', () async {
+      await list.addProduct('p1', 3, tempPrice: 8500);
+      final captured = list.items.single;
+      await list.removeProduct('p1');
+      await list.restoreItem(captured);
+      expect(list.items.single.quantity, 3);
+      expect(list.items.single.tempPrice, 8500);
+    });
+
     test('addProduct twice sums quantities into one item', () async {
       await list.addProduct('p1', 2);
       await list.addProduct('p1', 3);

@@ -34,14 +34,28 @@ class ShoppingListProvider extends ChangeNotifier {
   bool contains(String productId) => quantityOf(productId) != null;
 
   /// Siempre suma sin preguntar: la confirmación es responsabilidad de la UI.
-  Future<void> addProduct(String productId, int quantity) async {
+  ///
+  /// Si [tempPrice] es válido (> 0 y finito) reemplaza el precio temporal del
+  /// ítem (nuevo o existente); si es `null` o inválido, conserva el existente.
+  Future<void> addProduct(
+    String productId,
+    int quantity, {
+    double? tempPrice,
+  }) async {
     final qty = quantity < 1 ? 1 : quantity;
+    final temp = _validTempPrice(tempPrice);
     final index = _indexOf(productId);
     if (index == -1) {
-      _items = [..._items, ShoppingItem(productId: productId, quantity: qty)];
+      _items = [
+        ..._items,
+        ShoppingItem(productId: productId, quantity: qty, tempPrice: temp),
+      ];
     } else {
       final current = _items[index];
-      _replaceAt(index, current.copyWith(quantity: current.quantity + qty));
+      _replaceAt(
+        index,
+        current.copyWith(quantity: current.quantity + qty, tempPrice: temp),
+      );
     }
     await _persistAndNotify();
   }
@@ -52,6 +66,22 @@ class ShoppingListProvider extends ChangeNotifier {
     _replaceAt(
       index,
       _items[index].copyWith(quantity: quantity < 1 ? 1 : quantity),
+    );
+    await _persistAndNotify();
+  }
+
+  /// `null` quita el descuento. Valores no positivos o no finitos y productos
+  /// que no están en la lista se ignoran (sin notificar).
+  Future<void> setTempPrice(String productId, double? value) async {
+    if (value != null && _validTempPrice(value) == null) return;
+    final index = _indexOf(productId);
+    if (index == -1) return;
+    final current = _items[index];
+    _replaceAt(
+      index,
+      value == null
+          ? current.copyWith(clearTempPrice: true)
+          : current.copyWith(tempPrice: value),
     );
     await _persistAndNotify();
   }
@@ -84,7 +114,8 @@ class ShoppingListProvider extends ChangeNotifier {
     await _persistAndNotify();
   }
 
-  /// Reinserta el ítem tal cual (para "Deshacer"). Nunca duplica.
+  /// Reinserta el ítem tal cual (para "Deshacer"), incluido su precio
+  /// temporal. Nunca duplica.
   Future<void> restoreItem(ShoppingItem item) async {
     if (_indexOf(item.productId) != -1) return;
     _items = [..._items, item];
@@ -106,6 +137,9 @@ class ShoppingListProvider extends ChangeNotifier {
         if (i == index) item else _items[i],
     ];
   }
+
+  static double? _validTempPrice(double? value) =>
+      value != null && value > 0 && value.isFinite ? value : null;
 
   Future<void> _persistAndNotify() {
     notifyListeners();
