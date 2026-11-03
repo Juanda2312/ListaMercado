@@ -749,13 +749,11 @@ void main() {
     });
   });
   group('filas de la lista', () {
-    testWidgets('supermarket name is shown as a chip on each row', (
-      tester,
-    ) async {
+    testWidgets('supermarket name is shown on each row', (tester) async {
       await _pump(tester);
-      expect(find.widgetWithText(Chip, 'Ara'), findsNWidgets(2));
-      expect(find.widgetWithText(Chip, 'Éxito'), findsNWidgets(2));
-      expect(find.widgetWithText(Chip, 'Otros'), findsOneWidget);
+      expect(find.text('Ara'), findsNWidgets(2));
+      expect(find.text('Éxito'), findsNWidgets(2));
+      expect(find.text('Otros'), findsOneWidget);
     });
 
     testWidgets('row with discount shows the base price struck through, the '
