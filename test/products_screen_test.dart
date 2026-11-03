@@ -231,6 +231,126 @@ void main() {
       },
     );
   });
+  group('descuento al añadir', () {
+    final percentField = find.byKey(const Key('discount-percent'));
+    final priceField = find.byKey(const Key('discount-price'));
+
+    testWidgets('percent discount stores the computed tempPrice', (
+      tester,
+    ) async {
+      final app = await _pump(tester);
+      final id = _idOf(app, 'Leche');
+
+      await _openAddDialog(tester, id);
+      await tester.enterText(percentField, '25');
+      await tester.pump();
+      expect(tester.widget<TextField>(priceField).controller!.text, '3000');
+      await tester.tap(_dialogAdd);
+      await tester.pumpAndSettle();
+
+      expect(app.shoppingList.items.single.tempPrice, 3000);
+    });
+
+    testWidgets('final price discount stores the tempPrice', (tester) async {
+      final app = await _pump(tester);
+      final id = _idOf(app, 'Leche');
+
+      await _openAddDialog(tester, id);
+      await tester.enterText(priceField, '3600');
+      await tester.pump();
+      expect(tester.widget<TextField>(percentField).controller!.text, '10');
+      await tester.tap(_dialogAdd);
+      await tester.pumpAndSettle();
+
+      expect(app.shoppingList.items.single.tempPrice, 3600);
+    });
+
+    testWidgets('leaving the discount empty stores no tempPrice', (
+      tester,
+    ) async {
+      final app = await _pump(tester);
+      final id = _idOf(app, 'Leche');
+
+      await _openAddDialog(tester, id);
+      await tester.tap(_dialogAdd);
+      await tester.pumpAndSettle();
+
+      expect(app.shoppingList.items.single.tempPrice, isNull);
+    });
+
+    testWidgets('an invalid discount disables Añadir', (tester) async {
+      final app = await _pump(tester);
+      final id = _idOf(app, 'Leche');
+
+      await _openAddDialog(tester, id);
+      await tester.enterText(percentField, '100');
+      await tester.pump();
+
+      expect(find.text('Descuento inválido'), findsOneWidget);
+      expect(tester.widget<FilledButton>(_dialogAdd).onPressed, isNull);
+      expect(app.shoppingList.items, isEmpty);
+
+      await tester.enterText(percentField, '');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(_dialogAdd).onPressed, isNotNull);
+    });
+
+    testWidgets('product without a base price only accepts a final price', (
+      tester,
+    ) async {
+      final app = await _pump(tester);
+      final id = _idOf(app, 'Pan');
+
+      await _openAddDialog(tester, id);
+      expect(tester.widget<TextField>(percentField).enabled, isFalse);
+      await tester.enterText(priceField, '500');
+      await tester.pump();
+      await tester.tap(_dialogAdd);
+      await tester.pumpAndSettle();
+
+      expect(app.shoppingList.items.single.tempPrice, 500);
+    });
+
+    testWidgets('product already in the list: the confirmation mentions the '
+        'new temporary price and replaces the old one', (tester) async {
+      final app = await _pump(tester);
+      final id = _idOf(app, 'Leche');
+      await app.shoppingList.addProduct(id, 2, tempPrice: 3600);
+
+      await _openAddDialog(tester, id);
+      await _increase(tester, 1);
+      await tester.enterText(percentField, '25');
+      await tester.pump();
+      await tester.tap(_dialogAdd);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('precio temporal'), findsOneWidget);
+      expect(find.textContaining('\$3.000'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Sumar'));
+      await tester.pumpAndSettle();
+
+      expect(app.shoppingList.quantityOf(id), 4);
+      expect(app.shoppingList.items.single.tempPrice, 3000);
+    });
+
+    testWidgets('product already in the list without a new discount keeps '
+        'the existing one', (tester) async {
+      final app = await _pump(tester);
+      final id = _idOf(app, 'Leche');
+      await app.shoppingList.addProduct(id, 2, tempPrice: 3600);
+
+      await _openAddDialog(tester, id);
+      await tester.tap(_dialogAdd);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('precio temporal'), findsNothing);
+      await tester.tap(find.widgetWithText(FilledButton, 'Sumar'));
+      await tester.pumpAndSettle();
+
+      expect(app.shoppingList.quantityOf(id), 3);
+      expect(app.shoppingList.items.single.tempPrice, 3600);
+    });
+  });
 
   group('editar y eliminar', () {
     testWidgets('edit menu opens the form preloaded with that product', (

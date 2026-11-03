@@ -9,6 +9,7 @@ import '../providers/shopping_list_provider.dart';
 import '../providers/supermarkets_provider.dart';
 import '../utils/price_format.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/discount_fields.dart';
 import '../widgets/quantity_stepper.dart';
 import 'product_form_screen.dart';
 
@@ -189,29 +190,36 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final list = context.read<ShoppingListProvider>();
     final messenger = ScaffoldMessenger.of(context);
 
-    final quantity = await showDialog<int>(
+    final result = await showDialog<({int quantity, double? tempPrice})>(
       context: context,
-      builder: (_) => _QuantityDialog(productName: product.name),
+      builder: (_) =>
+          _QuantityDialog(productName: product.name, basePrice: product.price),
     );
-    if (quantity == null) return;
+    if (result == null) return;
     if (!context.mounted) return;
+
+    final quantity = result.quantity;
+    final tempPrice = result.tempPrice;
 
     // La confirmación vive aquí (UI), no en el provider.
     final current = list.quantityOf(product.id);
     if (current != null) {
+      final discountNote = tempPrice == null
+          ? ''
+          : ' Se aplicará el precio temporal ${formatPrice(tempPrice)}.';
       final confirmed = await confirmDialog(
         context,
         title: 'Producto ya en la lista',
         message:
             '"${product.name}" ya está en la lista con cantidad '
             '$current. ¿Sumar $quantity más para un total de '
-            '${current + quantity}?',
+            '${current + quantity}?$discountNote',
         confirmLabel: 'Sumar',
       );
       if (!confirmed) return;
     }
 
-    await list.addProduct(product.id, quantity);
+    await list.addProduct(product.id, quantity, tempPrice: tempPrice);
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -235,9 +243,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
 }
 
 class _QuantityDialog extends StatefulWidget {
-  const _QuantityDialog({required this.productName});
+  const _QuantityDialog({required this.productName, required this.basePrice});
 
   final String productName;
+  final double? basePrice;
 
   @override
   State<_QuantityDialog> createState() => _QuantityDialogState();
@@ -245,10 +254,13 @@ class _QuantityDialog extends StatefulWidget {
 
 class _QuantityDialogState extends State<_QuantityDialog> {
   int _quantity = 1;
+  double? _tempPrice;
+  bool _discountValid = true;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       title: const Text('Añadir a la lista'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -266,6 +278,14 @@ class _QuantityDialogState extends State<_QuantityDialog> {
               onChanged: (v) => setState(() => _quantity = v),
             ),
           ),
+          const SizedBox(height: 16),
+          DiscountFields(
+            basePrice: widget.basePrice,
+            onChanged: (price, valid) => setState(() {
+              _tempPrice = price;
+              _discountValid = valid;
+            }),
+          ),
         ],
       ),
       actions: [
@@ -274,7 +294,11 @@ class _QuantityDialogState extends State<_QuantityDialog> {
           child: const Text('Cancelar'),
         ),
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(_quantity),
+          onPressed: _discountValid
+              ? () =>
+                    Navigator.of(context)
+                        .pop((quantity: _quantity, tempPrice: _tempPrice))
+              : null,
           child: const Text('Añadir'),
         ),
       ],
