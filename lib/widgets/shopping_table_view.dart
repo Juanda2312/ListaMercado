@@ -10,7 +10,6 @@ import '../utils/discount.dart';
 import '../utils/price_format.dart';
 import 'confirm_dialog.dart';
 import 'discount_dialog.dart';
-import 'initial_avatar.dart';
 
 /// Ancho de cada tarjeta: fijo en pantallas anchas; en estrechas, 80 % del
 /// espacio (entre 240 y 320) para que la siguiente tarjeta asome.
@@ -70,11 +69,9 @@ class _SectionColumn extends StatelessWidget {
           children: [
             Container(
               color: scheme.secondaryContainer,
-              padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 0, 8),
               child: Row(
                 children: [
-                  InitialAvatar(name: section.title),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

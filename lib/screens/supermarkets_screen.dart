@@ -5,7 +5,6 @@ import '../models/supermarket.dart';
 import '../providers/supermarkets_provider.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/initial_avatar.dart';
 
 class SupermarketsScreen extends StatelessWidget {
   const SupermarketsScreen({super.key});
@@ -33,7 +32,7 @@ class SupermarketsScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   child: ListTile(
-                    leading: InitialAvatar(name: s.name),
+                    leading: const Icon(Icons.store_outlined),
                     title: Text(
                       s.name,
                       maxLines: 2,
