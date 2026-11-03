@@ -78,7 +78,7 @@ Reglas: el APK y el release de GitHub se generan siempre desde `main` ya etiquet
 **P1 – Productos:** pantalla con nombre, supermercado y precio. Añadir, modificar, eliminar, buscar (con filtro por supermercado) y añadir a la lista con cantidad (si el producto ya está en la lista, pide confirmación para sumar).
 **P2 – Supermercados:** pantalla con solo el nombre. Añadir, modificar, eliminar.
 **P3 – Lista de mercado:** lista (nombre, supermercado, cantidad, precio unitario, total) y tabla por supermercados (columna Otros). Modificar cantidad; tachar/destachar un producto (sincronizado entre lista y tabla); tachar/destachar todos los de un supermercado; tachar/destachar todos; limpiar la lista; quitar un solo producto de la lista (deslizando la fila, con opción de deshacer); botón en cada producto que abre su edición (acceso directo a P1).
-**P3 – Barra superior (v1.0.1):** total general de la lista (`TOTAL + (?)` si hay productos sin precio) y presupuesto opcional; restante = presupuesto − total, mostrado como `RESTANTE - (?)` si hay productos sin precio, en verde si ≥ 0 y en rojo si es negativo. El presupuesto se guarda en `ShoppingListProvider` (`budget_v1`) y no se borra al limpiar la lista.
+**P3 – Resumen superior (v1.0.1, presentación en 1.0.3):** total general de la lista (`TOTAL + (?)` si hay productos sin precio) y presupuesto opcional; restante = presupuesto − total, mostrado como `RESTANTE - (?)` si hay productos sin precio, en verde si ≥ 0 y en rojo si es negativo. El presupuesto se guarda en `ShoppingListProvider` (`budget_v1`) y no se borra al limpiar la lista.
 **P1/P3 – Descuento (v1.0.2):** al añadir un producto a la lista, además de la cantidad se puede indicar un descuento opcional como **% de descuento** o como **precio final** (dos campos complementarios: al llenar uno, el otro se calcula y se rellena solo). Se puede añadir, modificar o quitar después desde P3 (vista Lista y vista Por supermercado). Los totales y el presupuesto usan el precio con descuento.
 **Todas – Rediseño visual (v1.0.3):** la app sigue el tema claro u oscuro del sistema; las tarjetas de la tabla se adaptan al ancho de la pantalla (vertical y horizontal) y dan todo el ancho al nombre del producto; el total y el presupuesto se muestran en un resumen con barra de progreso; la lista y el catálogo de productos usan tarjetas con más jerarquía visual y estados vacíos con ícono. La funcionalidad no cambia.
 
@@ -106,11 +106,12 @@ Reglas: el APK y el release de GitHub se generan siempre desde `main` ya etiquet
   - Persistencia: `tempPrice` es opcional en el JSON de `shopping_items_v1`; si falta o es inválido se lee como `null` sin descartar el ítem.
 - **Rediseño visual (v1.0.3):**
   - **Tema único** en `lib/app.dart` (`_buildTheme(Brightness)`): semilla verde `0xFF2E7D32`, Material 3, `theme` claro + `darkTheme` oscuro con `ThemeMode.system`. Tarjetas sin elevación, radio 20 y borde `outlineVariant`; diálogos con radio 28; `SnackBar` flotante; AppBar plana (sin tinte al hacer scroll); `NavigationBar` con fondo `surfaceContainer`. Ningún widget fija colores de marca a mano salvo el verde/rojo semántico del restante.
+  - **Sin avatares de letra:** los supermercados no llevan círculo con la inicial (parecían contactos). Ni la tarjeta de la tabla ni la pantalla de Supermercados lo usan; no existe un widget `InitialAvatar`.
   - **Verde/rojo del restante:** se conservan exactamente los tonos de 1.0.1 (`shade700` en tema claro, `shade300` en oscuro); los tests los verifican.
   - **Ancho de columna adaptable** en la tabla de P3 (reemplaza la constante `_columnWidth`): si el espacio disponible es ≥ 600 → 280; si no, 80 % del espacio limitado a [240, 320], de modo que la siguiente tarjeta asoma y se entiende que hay scroll horizontal.
-  - **Tarjeta de supermercado:** encabezado tintado con avatar (inicial) + nombre + "N producto(s)" + menú; celdas con el nombre a todo el ancho (máx. 2 líneas) y, debajo, `cantidad × precio` a la izquierda y los botones de descuento y edición a la derecha; pie con la etiqueta "Total" y `section.totalLabel` en negrita. El texto `cantidad × precio (-%)` se conserva exactamente como lo buscan los tests; el descuento se distingue por color y peso, no por texto extra.
-  - **Resumen de total y presupuesto (Tarea 18):** sale de la `AppBar` y pasa a una tarjeta `BudgetSummary` encima de las pestañas, con `Total`, la línea de presupuesto/restante y un `LinearProgressIndicator` (`total / presupuesto`, limitado a [0, 1]; rojo si se superó el presupuesto, verde si no). La barra no cambia los números: es solo una ayuda visual. Los `Key('list-total')` y `Key('list-budget')` y su estructura de texto se conservan.
-  - **Estados vacíos:** ícono + el mismo texto que ya buscan los tests (`La lista está vacía`, `Aún no hay productos`, `Sin resultados`, `Aún no hay supermercados`).
+  - **Tarjeta de supermercado:** encabezado tintado (`secondaryContainer`) con nombre + "N producto(s)" + menú; celdas con el nombre a todo el ancho (máx. 2 líneas) y, debajo, `cantidad × precio` a la izquierda y los botones de descuento y edición a la derecha; pie con la etiqueta "Total" y `section.totalLabel` en negrita. El texto `cantidad × precio (-%)` se conserva exactamente como lo buscan los tests; el descuento se distingue por color y peso, no por texto extra.
+  - **Resumen de total y presupuesto (Tarea 18):** sale de la `AppBar` y pasa a una tarjeta `BudgetSummary` encima de las pestañas, con `Total`, la línea de presupuesto/restante y un `LinearProgressIndicator` (`total / presupuesto`, limitado a [0, 1]; rojo si se superó el presupuesto, verde si no). La barra no cambia los números: es solo una ayuda visual. Los `Key('list-total')` y `Key('list-budget')` y su estructura de texto se conservan. La `AppBar` pasa a titularse `Lista de mercado`.
+  - **Estados vacíos:** widget `EmptyState` (ícono + el mismo texto que ya buscan los tests: `La lista está vacía`, `Aún no hay productos`, `Sin resultados`, `Aún no hay supermercados`).
   - **Accesibilidad:** ningún layout debe desbordar con texto al 150 % ni en 360×640; los nombres largos usan `maxLines` + `ellipsis`; los iconos con acción llevan `tooltip`.
 
 ## Arquitectura
@@ -167,6 +168,7 @@ lib/
     ├── discount_fields.dart          # campos % / precio final complementarios (alta y edición)
     ├── discount_dialog.dart          # diálogo de descuento de una fila de la lista (v1.0.2)
     ├── budget_summary.dart           # tarjeta de total + presupuesto + barra de progreso (v1.0.3)
+    ├── empty_state.dart              # ícono + texto para listas vacías (v1.0.3)
     ├── shopping_list_view.dart       # pestaña "Lista" (con deslizar para quitar y editar descuento)
     └── shopping_table_view.dart      # pestaña "Por supermercado" (columnas adaptables)
 
@@ -516,7 +518,7 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `ShoppingListProvider`: `double? get budget` (cargado en el constructor) y `Future<void> setBudget(double? value)`; `null` quita el presupuesto; valores no positivos o no finitos se ignoran. `clear()` no toca el presupuesto.
   - `class ListTotal { final double total; final bool hasUnpriced; String get label; double remaining(double budget); bool isOverBudget(double budget); String remainingLabel(double budget); }` — `label` = `formatPrice(total)` o `'${formatPrice(total)} + (?)'`; `remainingLabel` = restante formateado (negativo como `-$700`) más `' - (?)'` si `hasUnpriced`.
   - `ListTotal buildTotal(List<ListRow> rows)` — suma las filas con precio (tachadas incluidas) y marca `hasUnpriced` si alguna no tiene precio.
-  - `ShoppingListScreen`: el título de la `AppBar` pasa a ser una columna con `Total: <label>` (`Key('list-total')`) y, solo si hay presupuesto, `Presupuesto <monto> · Restante: <remainingLabel>` (`Key('list-budget')`), con el restante en verde si ≥ 0 y en rojo si < 0 (tonos más claros en tema oscuro). Nuevo botón de cartera (`Key('budget-button')`) en las acciones que abre un diálogo (`Key('budget-input')`) con "Cancelar", "Quitar" (solo si ya hay presupuesto) y "Guardar"; un monto inválido deja el diálogo abierto con el error `Precio inválido`.
+  - `ShoppingListScreen`: el título de la `AppBar` pasa a ser una columna con `Total: <label>` (`Key('list-total')`) y, solo si hay presupuesto, `Presupuesto <monto> · Restante: <remainingLabel>` (`Key('list-budget')`), con el restante en verde si ≥ 0 y en rojo si < 0 (tonos más claros en tema oscuro). Nuevo botón de cartera (`Key('budget-button')`) en las acciones que abre un diálogo (`Key('budget-input')`) con "Cancelar", "Quitar" (solo si ya hay presupuesto) y "Guardar"; un monto inválido deja el diálogo abierto con el error `Precio inválido`. (En 1.0.3 este título se mueve a `BudgetSummary`, Tarea 18.)
 
 - [ ] **Paso 1: Test que falla:**
   - `buildTotal sums all priced rows and flags unpriced`: 2×1000 + fila sin precio → `total == 2000`, `label == '\$2.000 + (?)'`, `remainingLabel(5000) == '\$3.000 - (?)'`, `isOverBudget(5000) == false`.
@@ -674,26 +676,26 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 - Consume: `ListRow`, `SupermarketSection`, `formatPrice`, `formatPercent`, `showDiscountDialog`.
 - Produce:
   - `lib/app.dart`: función privada `ThemeData _buildTheme(Brightness)` (ver "Decisiones de diseño → Rediseño visual"); `MaterialApp(theme: light, darkTheme: dark, themeMode: ThemeMode.system)`.
-  - `ShoppingTableView`: usa `LayoutBuilder` y `double _columnWidthFor(double available)` (≥ 600 → 280; si no, `(available * 0.8).clamp(240, 320)`). Cada columna es un `Card` con encabezado (avatar con la inicial, título, "1 producto"/"N productos", menú `Key('section-menu-<title>')`), celdas separadas por `Divider` con sangría y pie con "Total" + `section.totalLabel` (`Key('section-total-<title>')`).
+  - `ShoppingTableView`: usa `LayoutBuilder` y `double _columnWidthFor(double available)` (≥ 600 → 280; si no, `(available * 0.8).clamp(240, 320)`). Cada columna es un `Card` con encabezado tintado (título, "1 producto"/"N productos", menú `Key('section-menu-<title>')`; **sin avatar de letra**), celdas separadas por `Divider` con sangría y pie con "Total" + `section.totalLabel` (`Key('section-total-<title>')`).
   - Celda: `Text` del nombre (`Key('cell-name-<id>')`, hasta 2 líneas) a todo el ancho; debajo una fila con el texto `cantidad × precio (-%)` (mismo formato que 1.0.2) y los botones `Key('discount-cell-<id>')` y `Key('edit-cell-<id>')`. Tocar la celda sigue alternando el tachado.
 
-- [ ] **Paso 1: Crear la rama:** `git checkout develop && git pull && git checkout -b feature/redesign-1.0.3`.
-- [ ] **Paso 2: Test que falla:**
+- [x] **Paso 1: Crear la rama:** `git checkout develop && git pull && git checkout -b feature/redesign-1.0.3`.
+- [x] **Paso 2: Test que falla:**
   - `app_theme_test`: `ListaMercadoApp defines a light and a dark theme and follows the system` (`MaterialApp.theme.brightness == light`, `darkTheme.brightness == dark`, `themeMode == ThemeMode.system`).
-  - `shopping_list_screen_test` (grupo `tabla`): `column width is 280 on a wide screen and 80 % of it on a narrow one` (medir el `Card` ancestro de `section-total-Ara` con `tester.getSize`: con vista de 800 px → 280; con 360 px → 288); `section header shows the product count` (`'2 productos'` en Ara, `'1 producto'` en Otros); `long product name does not overflow in a 360×640 screen` (sin excepciones de layout).
+  - `shopping_list_screen_test` (grupo `tabla`): `column width is 280 on a wide screen and 80 % of it on a narrow one` (medir el `Card` ancestro de `section-total-Ara` con `tester.getSize`: con vista de 800 px → 280; con 360 px → 288); `section header shows the product count` (`'2 productos'` en Ara y Éxito, `'1 producto'` en Otros); `long product name does not overflow in a 360×640 screen` (sin excepciones de layout).
   - Los tests existentes del grupo `tabla`, `tachado`, `acciones masivas`, `atajo de edición` y `descuento desde la lista` **no cambian** y deben seguir pasando.
-- [ ] **Paso 3:** `flutter test test/app_theme_test.dart test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
-- [ ] **Paso 4:** Implementar `lib/app.dart` y `lib/widgets/shopping_table_view.dart`.
-- [ ] **Paso 5:** `flutter test` completo → verde; `flutter analyze` → sin issues.
-- [ ] **Paso 6:** Verificación manual: vertical y horizontal; 5+ supermercados con scroll horizontal (la siguiente tarjeta asoma); nombre muy largo; producto con descuento; tema claro y oscuro (cambiarlo desde los ajustes del teléfono); texto del sistema al 150 %.
-- [ ] **Paso 7:** Commit: `feat: add app theme and redesign supermarket table cards`
+- [x] **Paso 3:** `flutter test test/app_theme_test.dart test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
+- [x] **Paso 4:** Implementar `lib/app.dart` y `lib/widgets/shopping_table_view.dart`.
+- [x] **Paso 5:** `flutter test` completo → verde; `flutter analyze` → sin issues.
+- [x] **Paso 6:** Verificación manual: vertical y horizontal; 5+ supermercados con scroll horizontal (la siguiente tarjeta asoma); nombre muy largo; producto con descuento; tema claro y oscuro (cambiarlo desde los ajustes del teléfono); texto del sistema al 150 %.
+- [x] **Paso 7:** Commit: `feat: add app theme and redesign supermarket table cards`
 
 ---
 
 ### Tarea 18: Resumen de total y presupuesto con barra de progreso
 
 **Archivos:**
-- Crear: `lib/widgets/budget_summary.dart`
+- Crear: `lib/widgets/budget_summary.dart`, `lib/widgets/empty_state.dart`
 - Modificar: `lib/screens/shopping_list_screen.dart`
 - Test: `test/shopping_list_screen_test.dart` (grupo `total y presupuesto`)
 
@@ -701,20 +703,21 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 - Consume: `ListTotal` (`label`, `remainingLabel`, `isOverBudget`), `formatPrice`.
 - Produce:
   - `class BudgetSummary extends StatelessWidget { const BudgetSummary({super.key, required ListTotal total, required double? budget}); }` — `Card` con `Text('Total: <label>', key: Key('list-total'))` en tamaño grande; si hay presupuesto, `Text.rich(key: Key('list-budget'))` con **la misma estructura de spans de 1.0.1** (`Presupuesto <monto> · Restante: ` + restante en negrita verde/rojo) y debajo un `LinearProgressIndicator(key: Key('budget-progress'))` con `value = (total.total / budget).clamp(0, 1)`, rojo si `isOverBudget`, verde si no (mismos tonos que el texto). Sin presupuesto no hay línea de presupuesto ni barra.
-  - `ShoppingListScreen`: la `AppBar` pierde el título de dos líneas (`_TotalsTitle`) y su `toolbarHeight: 72`; el título pasa a ser el texto fijo `Lista de mercado`. El cuerpo es una `Column`: `BudgetSummary` siempre visible arriba y, debajo, un `Expanded` con el estado vacío (`La lista está vacía`) o el `TabBarView`. El botón de cartera (`Key('budget-button')`), el menú de la lista y el diálogo de presupuesto no cambian.
+  - `class EmptyState extends StatelessWidget { const EmptyState({super.key, required IconData icon, required String text}); }` — ícono grande atenuado + texto (se reutiliza en la Tarea 20).
+  - `ShoppingListScreen`: la `AppBar` pierde el título de dos líneas (`_TotalsTitle`) y su `toolbarHeight: 72`; el título pasa a ser el texto fijo `Lista de mercado`. El cuerpo es una `Column`: `BudgetSummary` siempre visible arriba y, debajo, un `Expanded` con el estado vacío (`EmptyState` con `La lista está vacía`) o el `TabBarView`. El botón de cartera (`Key('budget-button')`), el menú de la lista y el diálogo de presupuesto no cambian.
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `summary shows the grand total with (?)` y no hay `list-budget` ni `budget-progress` sin presupuesto (equivale al test de 1.0.1 `app bar shows the grand total with (?)`, renombrado).
   - `progress bar value is total / budget`: presupuesto 10000 con total 4700 → `value == 0.47`.
   - `progress bar is capped at 1 and turns red when over budget`: presupuesto 4000 → `value == 1.0` y color rojo.
   - `progress bar is green while within budget`.
   - `budget above total shows green remaining` y `budget below total shows red negative remaining` **sin cambios** (siguen leyendo `Key('list-budget')` y el color del último span). **(RF7)**
   - `empty list still shows the summary with \$0 and the empty message`.
-- [ ] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
-- [ ] **Paso 3:** Implementar. Evitar división por cero (el presupuesto siempre es > 0, pero proteger de todos modos).
-- [ ] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
-- [ ] **Paso 5:** Verificación manual: sin presupuesto, con presupuesto mayor y menor al total, quitar presupuesto, limpiar lista (el presupuesto se conserva), tema oscuro, 360×640, texto al 150 %.
-- [ ] **Paso 6:** Commit: `feat: add budget summary card with progress bar`
+- [x] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
+- [x] **Paso 3:** Implementar. Evitar división por cero (el presupuesto siempre es > 0, pero proteger de todos modos).
+- [x] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
+- [x] **Paso 5:** Verificación manual: sin presupuesto, con presupuesto mayor y menor al total, quitar presupuesto, limpiar lista (el presupuesto se conserva), tema oscuro, 360×640, texto al 150 %.
+- [x] **Paso 6:** Commit: `feat: add budget summary card with progress bar`
 
 ---
 
@@ -726,56 +729,56 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 
 **Interfaces:**
 - Consume: `ListRow`, `formatPrice`, `formatPercent`, `showDiscountDialog`, `QuantityStepper`.
-- Produce: misma funcionalidad que 1.0.2 con otra presentación: nombre arriba (2 líneas máx.) y a su derecha los botones de descuento y edición; el supermercado como `Chip` pequeño (texto igual que antes, incluido `Otros`); abajo, el `QuantityStepper` a la izquierda y a la derecha el precio unitario (`Key('row-unit-<id>')`, con el precio base tachado y `-<porcentaje>` cuando hay descuento) y el total de línea (`Key('row-total-<id>')`, más grande y en negrita). Tarjeta con más padding y esquinas del tema. El `Dismissible` (`Key('dismiss-<id>')`), el `Card` `Key('list-row-<id>')` y todos los demás `Key` se conservan; el fondo rojo de deslizar adopta las esquinas de la tarjeta.
+- Produce: misma funcionalidad que 1.0.2 con otra presentación: nombre arriba (2 líneas máx.) y a su derecha los botones de descuento y edición; el supermercado como línea de texto pequeña bajo el nombre; el nombre y los botones (compactos) van en la primera fila y el stepper con precio unitario y total en la segunda, para que la tarjeta sea baja (texto igual que antes, incluido `Otros`); abajo, el `QuantityStepper` a la izquierda y a la derecha el precio unitario (`Key('row-unit-<id>')`, con el precio base tachado y `-<porcentaje>` cuando hay descuento) y el total de línea (`Key('row-total-<id>')`, más grande y en negrita). Tarjeta con más padding y esquinas del tema. El `Dismissible` (`Key('dismiss-<id>')`), el `Card` `Key('list-row-<id>')` y todos los demás `Key` se conservan; el fondo de deslizar (color `error`) adopta las esquinas de la tarjeta.
   - Restricciones para no romper tests: el texto `-10%` debe aparecer **una sola vez** por fila con descuento; `row-total-<id>` contiene solo el monto (`$1.800`); el tachado sigue aplicándose al `Text` de `row-name-<id>`.
 
-- [ ] **Paso 1: Test que falla:**
-  - `supermarket name is shown as a chip on each row` (`Ara` aparece como `Chip`; `Otros` para productos sin supermercado).
+- [x] **Paso 1: Test que falla:**
+  - `supermarket name is shown on each row` (`Ara` aparece como `Chip`; `Otros` para productos sin supermercado).
   - `row with discount shows the base price struck through, the final price and the percent once`.
   - `long product name wraps to two lines without overflow at 360×640 and 150 % text`.
   - Los tests existentes (tachado, cantidades, quitar un solo producto, descuento) siguen pasando **sin cambios**.
-- [ ] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
-- [ ] **Paso 3:** Implementar.
-- [ ] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
-- [ ] **Paso 5:** Verificación manual: deslizar para quitar y deshacer; tachar; descuento; nombre largo; tema oscuro; horizontal.
-- [ ] **Paso 6:** Commit: `feat: redesign shopping list rows`
+- [x] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
+- [x] **Paso 3:** Implementar.
+- [x] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
+- [x] **Paso 5:** Verificación manual: deslizar para quitar y deshacer; tachar; descuento; nombre largo; tema oscuro; horizontal.
+- [x] **Paso 6:** Commit: `feat: redesign shopping list rows`
 
 ---
 
 ### Tarea 20: Productos, Supermercados y estados vacíos
 
 **Archivos:**
-- Modificar: `lib/screens/products_screen.dart`, `lib/screens/supermarkets_screen.dart`, `lib/screens/shopping_list_screen.dart` (solo el estado vacío)
+- Modificar: `lib/screens/products_screen.dart`, `lib/screens/supermarkets_screen.dart`
 - Test: `test/products_screen_test.dart`, `test/supermarkets_screen_test.dart`, `test/shopping_list_screen_test.dart`
 
 **Interfaces:**
-- Consume: `Product`, `Supermarket`, `formatPrice`.
+- Consume: `Product`, `Supermarket`, `formatPrice`, `EmptyState` (Tarea 18).
 - Produce:
-  - **Productos:** cada producto es una `Card` (`Key('product-tile-<id>')` en la tarjeta) con el nombre (2 líneas máx.), el supermercado como `Chip` pequeño solo si existe y el precio destacado a la derecha solo si existe; el botón `Key('add-to-list-<id>')` y el menú `Key('product-menu-<id>')` se conservan. La búsqueda y el filtro conservan sus `Key` y se agrupan en una cabecera más ligera.
-  - **Supermercados:** cada fila es una `Card` con avatar (inicial) + nombre; `Key('edit-supermarket-<id>')` y `Key('delete-supermarket-<id>')` se conservan.
-  - **Estados vacíos** reutilizables (función o widget privado `_EmptyState(icon, text)`): ícono grande atenuado + texto. Los textos exactos se conservan: `Aún no hay productos`, `Sin resultados`, `Aún no hay supermercados`, `La lista está vacía`.
+  - **Productos:** cada producto es una `Card` (`Key('product-tile-<id>')` en la tarjeta) con el nombre (2 líneas máx.), el supermercado como `Chip` pequeño solo si existe y el precio destacado a la derecha solo si existe; el botón `Key('add-to-list-<id>')` y el menú `Key('product-menu-<id>')` se conservan. La búsqueda y el filtro conservan sus `Key` y pasan a campos rellenos con bordes redondeados.
+  - **Supermercados:** cada fila es una `Card` con el nombre (sin avatar de letra); `Key('edit-supermarket-<id>')` y `Key('delete-supermarket-<id>')` se conservan.
+  - **Estados vacíos** con `EmptyState` (ícono + texto). Los textos exactos se conservan: `Aún no hay productos`, `Sin resultados`, `Aún no hay supermercados`, `La lista está vacía`.
   - **Test que cambia a propósito:** `subtitle shows supermarket and price only when they exist` (busca `'Ara · $4.000'`) se reemplaza por `shows the supermarket as a chip and the price only when they exist` (busca el `Chip` con `Ara` y el texto `$4.000`; para `Pan`, sin supermercado ni precio, no hay `Chip` ni precio).
 
-- [ ] **Paso 1: Test que falla:** el test reemplazado de arriba; `empty states show an icon and keep their text` (los cuatro textos); `product card does not overflow with a very long name at 360×640`. El resto de la suite no cambia.
-- [ ] **Paso 2:** `flutter test test/products_screen_test.dart test/supermarkets_screen_test.dart test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
-- [ ] **Paso 3:** Implementar.
-- [ ] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
-- [ ] **Paso 5:** Verificación manual: recorrer las tres pestañas en claro y oscuro, vertical y horizontal; lista de 30+ productos (rendimiento del scroll); teclado abierto en el diálogo de añadir (nada queda tapado).
-- [ ] **Paso 6:** Commit: `feat: redesign products and supermarkets screens and empty states`
+- [x] **Paso 1: Test que falla:** el test reemplazado de arriba; `empty states show an icon and keep their text` (los cuatro textos); `product card does not overflow with a very long name at 360×640`. El resto de la suite no cambia.
+- [x] **Paso 2:** `flutter test test/products_screen_test.dart test/supermarkets_screen_test.dart test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
+- [x] **Paso 3:** Implementar.
+- [x] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
+- [x] **Paso 5:** Verificación manual: recorrer las tres pestañas en claro y oscuro, vertical y horizontal; lista de 30+ productos (rendimiento del scroll); teclado abierto en el diálogo de añadir (nada queda tapado).
+- [x] **Paso 6:** Commit: `feat: redesign products and supermarkets screens and empty states`
 
 ---
 
 ### Tarea 21: Release v1.0.3
 
 **Archivos:**
-- Modificar: `pubspec.yaml` (versión `1.0.3+4`), `README.md`
+- Modificar: `pubspec.yaml` (versión `1.0.3+4`), `README.md`, `CLAUDE.md`
 
 **Interfaces:**
 - Consume: app completa con las Tareas 17–20.
 - Produce: APK firmado con el mismo keystore y un release `v1.0.3` en GitHub con `ListaMercado.apk`.
 
-- [ ] **Paso 1:** Actualizar `README.md`: en *Funciones*, añadir el punto **Diseño (v1.0.3)** (tema claro/oscuro según el sistema, tarjetas adaptables al ancho, resumen de total y presupuesto con barra de progreso); en *Tecnología*, mencionar Material 3 con tema propio claro y oscuro; en *Estructura*, añadir `budget_summary` a la lista de widgets; en *Generar el APK release*, actualizar los ejemplos de versión (`1.0.3+4`) y de etiqueta (`v1.0.3`). Revisar que no se prometa nada que no esté en la app.
-- [ ] **Paso 2:** En `feature/redesign-1.0.3`, subir la versión a `1.0.3+4` en `pubspec.yaml`.
+- [x] **Paso 1:** Actualizar `README.md`: en *Funciones*, añadir el punto **Diseño (v1.0.3)** (tema claro/oscuro según el sistema, tarjetas adaptables al ancho, resumen de total y presupuesto con barra de progreso); en *Tecnología*, mencionar Material 3 con tema propio claro y oscuro; en *Estructura*, añadir el resumen de presupuesto y los estados vacíos a la lista de widgets; en *Generar el APK release*, actualizar los ejemplos de versión (`1.0.3+4`) y de etiqueta (`v1.0.3`). Revisar que no se prometa nada que no esté en la app.
+- [x] **Paso 2:** En `feature/redesign-1.0.3`, subir la versión a `1.0.3+4` en `pubspec.yaml`.
 - [ ] **Paso 3:** `dart format .`, `flutter analyze` y `flutter test` → todo en verde.
 - [ ] **Paso 4:** Commit: `chore: bump version to 1.0.3`. Fusionar la función en `develop` (`--no-ff`) y borrar la rama temporal, según "Flujo de ramas".
 - [ ] **Paso 5:** Fusionar `develop` en `main` (`--no-ff`) y crear el tag `v1.0.3`.
