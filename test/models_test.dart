@@ -70,6 +70,38 @@ void main() {
       expect(item.checked, isFalse);
     });
 
+    test('tempPrice defaults to null and round-trips through json', () {
+      const plain = ShoppingItem(productId: 'p1');
+      expect(plain.tempPrice, isNull);
+      expect(plain.toJson().containsKey('tempPrice'), isFalse);
+
+      const item = ShoppingItem(productId: 'p1', tempPrice: 8500);
+      expect(ShoppingItem.fromJson(item.toJson()).tempPrice, 8500);
+    });
+
+    test('fromJson reads a missing or invalid tempPrice as null', () {
+      for (final bad in [null, 'caro', 0, -5, double.infinity]) {
+        final item = ShoppingItem.fromJson({
+          'productId': 'p1',
+          'tempPrice': bad,
+        });
+        expect(item.productId, 'p1');
+        expect(item.tempPrice, isNull, reason: '$bad');
+      }
+      expect(ShoppingItem.fromJson({'productId': 'p1'}).tempPrice, isNull);
+      expect(
+        ShoppingItem.fromJson({'productId': 'p1', 'tempPrice': 8500}).tempPrice,
+        8500.0,
+      );
+    });
+
+    test('copyWith keeps tempPrice unless changed or cleared', () {
+      const item = ShoppingItem(productId: 'p1', tempPrice: 8500);
+      expect(item.copyWith(quantity: 2).tempPrice, 8500);
+      expect(item.copyWith(tempPrice: 7000).tempPrice, 7000);
+      expect(item.copyWith(clearTempPrice: true).tempPrice, isNull);
+    });
+
     test('copyWith changes only given fields', () {
       const item = ShoppingItem(productId: 'p1', quantity: 2);
       final changed = item.copyWith(checked: true);
