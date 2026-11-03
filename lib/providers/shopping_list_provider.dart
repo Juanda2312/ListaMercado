@@ -96,8 +96,8 @@ class ShoppingListProvider extends ChangeNotifier {
     ];
   }
 
-  Future<void> _persistAndNotify() async {
-    await _storage.saveShoppingItems(_items);
+  Future<void> _persistAndNotify() {
     notifyListeners();
+    return _storage.saveShoppingItems(_items);
   }
 }
