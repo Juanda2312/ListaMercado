@@ -11,6 +11,7 @@ import '../utils/price_format.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/discount_fields.dart';
 import '../widgets/quantity_stepper.dart';
+import '../widgets/empty_state.dart';
 import 'product_form_screen.dart';
 
 enum _ProductAction { edit, delete }
@@ -46,6 +47,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
       supermarketFilter: filter,
     );
 
+    final fieldBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(28),
+      borderSide: BorderSide.none,
+    );
+
     return Scaffold(
       appBar: AppBar(title: const Text('Productos')),
       body: Column(
@@ -54,10 +60,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: TextField(
               key: const Key('product-search'),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Buscar producto',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                border: fieldBorder,
                 isDense: true,
               ),
               onChanged: (v) => setState(() => _query = v),
@@ -66,9 +73,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: InputDecorator(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Supermercado',
-                border: OutlineInputBorder(),
+                filled: true,
+                border: fieldBorder,
                 isDense: true,
               ),
               child: DropdownButtonHideUnderline(
@@ -103,12 +111,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
           Expanded(
             child: results.isEmpty
-                ? Center(
-                    child: Text(
-                      allProducts.isEmpty
-                          ? 'Aún no hay productos'
-                          : 'Sin resultados',
-                    ),
+                ? EmptyState(
+                    icon: allProducts.isEmpty
+                        ? Icons.inventory_2_outlined
+                        : Icons.search_off,
+                    text: allProducts.isEmpty
+                        ? 'Aún no hay productos'
+                        : 'Sin resultados',
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.only(bottom: 88),
@@ -135,53 +144,92 @@ class _ProductsScreenState extends State<ProductsScreen> {
     Product product,
     SupermarketsProvider supermarkets,
   ) {
-    final parts = <String>[
-      ?supermarkets.byId(product.supermarketId)?.name,
-      if (product.price != null) formatPrice(product.price!),
-    ];
+    final theme = Theme.of(context);
+    final supermarketName = supermarkets.byId(product.supermarketId)?.name;
+    final price = product.price;
 
-    return ListTile(
+    return Card(
       key: Key('product-tile-${product.id}'),
-      title: Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: parts.isEmpty
-          ? null
-          : Text(
-              parts.join(' · '),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            key: Key('add-to-list-${product.id}'),
-            tooltip: 'Añadir a la lista',
-            icon: const Icon(Icons.add_shopping_cart),
-            onPressed: () => _addToList(context, product),
-          ),
-          PopupMenuButton<_ProductAction>(
-            key: Key('product-menu-${product.id}'),
-            onSelected: (action) {
-              switch (action) {
-                case _ProductAction.edit:
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => ProductFormScreen(productId: product.id),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  if (supermarketName != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Chip(
+                        label: Text(
+                          supermarketName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        labelStyle: theme.textTheme.bodySmall,
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                     ),
-                  );
-                case _ProductAction.delete:
-                  _delete(context, product);
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: _ProductAction.edit, child: Text('Editar')),
-              PopupMenuItem(
-                value: _ProductAction.delete,
-                child: Text('Eliminar'),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+            if (price != null)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 96),
+                child: Text(
+                  formatPrice(price),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+            IconButton(
+              key: Key('add-to-list-${product.id}'),
+              tooltip: 'Añadir a la lista',
+              icon: const Icon(Icons.add_shopping_cart),
+              onPressed: () => _addToList(context, product),
+            ),
+            PopupMenuButton<_ProductAction>(
+              key: Key('product-menu-${product.id}'),
+              onSelected: (action) {
+                switch (action) {
+                  case _ProductAction.edit:
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) =>
+                            ProductFormScreen(productId: product.id),
+                      ),
+                    );
+                  case _ProductAction.delete:
+                    _delete(context, product);
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: _ProductAction.edit,
+                  child: Text('Editar'),
+                ),
+                PopupMenuItem(
+                  value: _ProductAction.delete,
+                  child: Text('Eliminar'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

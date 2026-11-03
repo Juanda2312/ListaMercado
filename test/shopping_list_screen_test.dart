@@ -344,6 +344,51 @@ void main() {
       expect(_text(tester, const Key('section-total-Ara')), '\$2.500');
     });
 
+    Size cardSize(WidgetTester tester) => tester.getSize(
+      find
+          .ancestor(
+            of: find.byKey(const Key('section-total-Ara')),
+            matching: find.byType(Card),
+          )
+          .first,
+    );
+
+    testWidgets('column width is 280 on a wide screen and 80 % of it on a '
+        'narrow one', (tester) async {
+      await _pump(tester); // 800 px
+      await _goToTable(tester);
+      expect(cardSize(tester).width, 280);
+
+      tester.view.physicalSize = const Size(360, 640);
+      await tester.pumpAndSettle();
+      expect(cardSize(tester).width, 288);
+    });
+
+    testWidgets('section header shows the product count', (tester) async {
+      await _pump(tester);
+      await _goToTable(tester);
+      expect(find.text('2 productos'), findsNWidgets(2)); // Ara y Éxito
+      expect(find.text('1 producto'), findsOneWidget); // Otros
+    });
+
+    testWidgets('long product name does not overflow at 360×640 and 150 % '
+        'text', (tester) async {
+      final app = await _pump(tester);
+      tester.view.physicalSize = const Size(360, 640);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      final p = await app.products.add(
+        name: 'Queso campesino semidescremado extra largo ' * 3,
+        price: 12500,
+      );
+      await app.shoppingList.addProduct(p.id, 3, tempPrice: 9000);
+      await tester.pumpAndSettle();
+      await _goToTable(tester);
+
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets("unassigned products appear in the 'Otros' column", (
       tester,
     ) async {
@@ -493,6 +538,11 @@ void main() {
       return (t.textSpan! as TextSpan).children!.last.style!.color;
     }
 
+    LinearProgressIndicator bar(WidgetTester tester) =>
+        tester.widget<LinearProgressIndicator>(
+          find.byKey(const Key('budget-progress')),
+        );
+
     Future<void> setBudget(WidgetTester tester, String value) async {
       await tester.tap(find.byKey(const Key('budget-button')));
       await tester.pumpAndSettle();
@@ -501,10 +551,41 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('app bar shows the grand total with (?)', (tester) async {
+    testWidgets('summary shows the grand total with (?)', (tester) async {
       await _pump(tester);
       expect(_text(tester, const Key('list-total')), 'Total: \$4.700 + (?)');
       expect(find.byKey(const Key('list-budget')), findsNothing);
+      expect(find.byKey(const Key('budget-progress')), findsNothing);
+    });
+
+    testWidgets('progress bar value is total / budget', (tester) async {
+      await _pump(tester);
+      await setBudget(tester, '10000');
+      expect(bar(tester).value, 0.47);
+    });
+
+    testWidgets('progress bar is capped at 1 and turns red when over budget', (
+      tester,
+    ) async {
+      await _pump(tester);
+      await setBudget(tester, '4000');
+      expect(bar(tester).value, 1.0);
+      expect(bar(tester).color, Colors.red.shade700);
+    });
+
+    testWidgets('progress bar is green while within budget', (tester) async {
+      await _pump(tester);
+      await setBudget(tester, '5000');
+      expect(bar(tester).color, Colors.green.shade700);
+    });
+
+    testWidgets('empty list still shows the summary with \$0 and the empty '
+        'message', (tester) async {
+      final app = await _pump(tester);
+      await app.shoppingList.clear();
+      await tester.pumpAndSettle();
+      expect(_text(tester, const Key('list-total')), 'Total: \$0');
+      expect(find.text('La lista está vacía'), findsOneWidget);
     });
 
     testWidgets('budget above total shows green remaining', (tester) async {
@@ -665,6 +746,49 @@ void main() {
 
       expect(app.shoppingList.items.where((i) => i.productId == id).length, 1);
       expect(app.shoppingList.quantityOf(id), 1);
+    });
+  });
+  group('filas de la lista', () {
+    testWidgets('supermarket name is shown on each row', (tester) async {
+      await _pump(tester);
+      expect(find.text('Ara'), findsNWidgets(2));
+      expect(find.text('Éxito'), findsNWidgets(2));
+      expect(find.text('Otros'), findsOneWidget);
+    });
+
+    testWidgets('row with discount shows the base price struck through, the '
+        'final price and the percent once', (tester) async {
+      final app = await _pump(tester);
+      final id = _id(app, 'Leche');
+      await app.shoppingList.setTempPrice(id, 900);
+      await tester.pumpAndSettle();
+
+      final span =
+          tester.widget<Text>(find.byKey(Key('row-unit-$id'))).textSpan!
+              as TextSpan;
+      final struck = span.children!
+          .whereType<TextSpan>()
+          .where((s) => s.style?.decoration == TextDecoration.lineThrough)
+          .map((s) => s.text);
+      expect(struck, ['\$1.000']);
+      expect(find.textContaining('-10%', findRichText: true), findsOneWidget);
+    });
+
+    testWidgets('long product name wraps without overflow at 360×640 and '
+        '150 % text', (tester) async {
+      final app = await _pump(tester);
+      tester.view.physicalSize = const Size(360, 640);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      final p = await app.products.add(
+        name: 'Queso campesino semidescremado extra largo ' * 3,
+        price: 12500,
+      );
+      await app.shoppingList.addProduct(p.id, 3, tempPrice: 9000);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
     });
   });
 }

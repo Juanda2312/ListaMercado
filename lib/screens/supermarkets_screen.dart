@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/supermarket.dart';
 import '../providers/supermarkets_provider.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/empty_state.dart';
 
 class SupermarketsScreen extends StatelessWidget {
   const SupermarketsScreen({super.key});
@@ -15,35 +16,46 @@ class SupermarketsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Supermercados')),
       body: supermarkets.isEmpty
-          ? const Center(child: Text('Aún no hay supermercados'))
+          ? const EmptyState(
+              icon: Icons.store_outlined,
+              text: 'Aún no hay supermercados',
+            )
           : ListView.builder(
               padding: const EdgeInsets.only(bottom: 88),
               itemCount: supermarkets.length,
               itemBuilder: (context, index) {
                 final s = supermarkets[index];
-                return ListTile(
+                return Card(
                   key: Key('supermarket-tile-${s.id}'),
-                  title: Text(
-                    s.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        key: Key('edit-supermarket-${s.id}'),
-                        tooltip: 'Editar',
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => _showNameDialog(context, existing: s),
-                      ),
-                      IconButton(
-                        key: Key('delete-supermarket-${s.id}'),
-                        tooltip: 'Eliminar',
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _confirmDelete(context, s),
-                      ),
-                    ],
+                  child: ListTile(
+                    leading: const Icon(Icons.store_outlined),
+                    title: Text(
+                      s.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          key: Key('edit-supermarket-${s.id}'),
+                          tooltip: 'Editar',
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () =>
+                              _showNameDialog(context, existing: s),
+                        ),
+                        IconButton(
+                          key: Key('delete-supermarket-${s.id}'),
+                          tooltip: 'Eliminar',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => _confirmDelete(context, s),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
