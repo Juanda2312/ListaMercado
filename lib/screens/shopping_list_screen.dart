@@ -5,7 +5,9 @@ import '../logic/list_grouping.dart';
 import '../providers/products_provider.dart';
 import '../providers/shopping_list_provider.dart';
 import '../utils/price_format.dart';
+import '../widgets/budget_summary.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/shopping_list_view.dart';
 import '../widgets/shopping_table_view.dart';
 
@@ -25,8 +27,11 @@ class ShoppingListScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          toolbarHeight: 72,
-          title: _TotalsTitle(total: total, budget: list.budget),
+          title: const Text(
+            'Lista de mercado',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           actions: [
             IconButton(
               key: const Key('budget-button'),
@@ -64,11 +69,21 @@ class ShoppingListScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: rows.isEmpty
-            ? const Center(child: Text('La lista está vacía'))
-            : const TabBarView(
-                children: [ShoppingListView(), ShoppingTableView()],
-              ),
+        body: Column(
+          children: [
+            BudgetSummary(total: total, budget: list.budget),
+            Expanded(
+              child: rows.isEmpty
+                  ? const EmptyState(
+                      icon: Icons.checklist,
+                      text: 'La lista está vacía',
+                    )
+                  : const TabBarView(
+                      children: [ShoppingListView(), ShoppingTableView()],
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -111,59 +126,6 @@ class ShoppingListScreen extends StatelessWidget {
     );
     if (!confirmed) return;
     await list.clear();
-  }
-}
-
-class _TotalsTitle extends StatelessWidget {
-  const _TotalsTitle({required this.total, required this.budget});
-
-  final ListTotal total;
-  final double? budget;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
-    final budget = this.budget;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Total: ${total.label}',
-          key: const Key('list-total'),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleMedium,
-        ),
-        if (budget != null)
-          Text.rich(
-            key: const Key('list-budget'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            TextSpan(
-              style: theme.textTheme.bodySmall,
-              children: [
-                TextSpan(
-                  text: 'Presupuesto ${formatPrice(budget)} · Restante: ',
-                ),
-                TextSpan(
-                  text: total.remainingLabel(budget),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: total.isOverBudget(budget)
-                        ? (dark ? Colors.red.shade300 : Colors.red.shade700)
-                        : (dark
-                              ? Colors.green.shade300
-                              : Colors.green.shade700),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
   }
 }
 

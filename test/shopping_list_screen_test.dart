@@ -538,6 +538,11 @@ void main() {
       return (t.textSpan! as TextSpan).children!.last.style!.color;
     }
 
+    LinearProgressIndicator bar(WidgetTester tester) =>
+        tester.widget<LinearProgressIndicator>(
+          find.byKey(const Key('budget-progress')),
+        );
+
     Future<void> setBudget(WidgetTester tester, String value) async {
       await tester.tap(find.byKey(const Key('budget-button')));
       await tester.pumpAndSettle();
@@ -546,10 +551,41 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('app bar shows the grand total with (?)', (tester) async {
+    testWidgets('summary shows the grand total with (?)', (tester) async {
       await _pump(tester);
       expect(_text(tester, const Key('list-total')), 'Total: \$4.700 + (?)');
       expect(find.byKey(const Key('list-budget')), findsNothing);
+      expect(find.byKey(const Key('budget-progress')), findsNothing);
+    });
+
+    testWidgets('progress bar value is total / budget', (tester) async {
+      await _pump(tester);
+      await setBudget(tester, '10000');
+      expect(bar(tester).value, 0.47);
+    });
+
+    testWidgets('progress bar is capped at 1 and turns red when over budget', (
+      tester,
+    ) async {
+      await _pump(tester);
+      await setBudget(tester, '4000');
+      expect(bar(tester).value, 1.0);
+      expect(bar(tester).color, Colors.red.shade700);
+    });
+
+    testWidgets('progress bar is green while within budget', (tester) async {
+      await _pump(tester);
+      await setBudget(tester, '5000');
+      expect(bar(tester).color, Colors.green.shade700);
+    });
+
+    testWidgets('empty list still shows the summary with \$0 and the empty '
+        'message', (tester) async {
+      final app = await _pump(tester);
+      await app.shoppingList.clear();
+      await tester.pumpAndSettle();
+      expect(_text(tester, const Key('list-total')), 'Total: \$0');
+      expect(find.text('La lista está vacía'), findsOneWidget);
     });
 
     testWidgets('budget above total shows green remaining', (tester) async {
