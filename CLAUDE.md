@@ -24,6 +24,7 @@
 - Total por supermercado: los productos sin precio no suman; si hay alguno, el total se muestra como `TOTAL + (?)`.
 - Productos sin supermercado van a la columna **Otros**.
 - Cada supermercado es una **columna** de la tabla de la lista.
+- Dependencia de desarrollo permitida: flutter_launcher_icons (solo para generar el ícono; no entra en el APK).
 
 ## Requisitos (resumen del MVP)
 
