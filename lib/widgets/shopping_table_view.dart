@@ -8,8 +8,10 @@ import '../providers/supermarkets_provider.dart';
 import '../screens/product_form_screen.dart';
 import '../utils/price_format.dart';
 import 'confirm_dialog.dart';
+import '../utils/discount.dart';
+import 'discount_dialog.dart';
 
-const double _columnWidth = 160;
+const double _columnWidth = 184;
 
 class ShoppingTableView extends StatelessWidget {
   const ShoppingTableView({super.key});
@@ -126,6 +128,7 @@ class _Cell extends StatelessWidget {
     final checked = row.item.checked;
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.5);
     final unit = row.unitPrice;
+    final percent = row.discountPercent;
 
     return InkWell(
       onTap: () =>
@@ -151,7 +154,8 @@ class _Cell extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${row.item.quantity} × ${unit == null ? '—' : formatPrice(unit)}',
+                    '${row.item.quantity} × ${unit == null ? '—' : formatPrice(unit)}'
+                    '${percent == null ? '' : ' (-${formatPercent(percent)})'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -160,6 +164,17 @@ class _Cell extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            IconButton(
+              key: Key('discount-cell-${product.id}'),
+              tooltip: 'Descuento',
+              visualDensity: VisualDensity.compact,
+              iconSize: 20,
+              icon: Icon(
+                Icons.sell_outlined,
+                color: row.hasDiscount ? theme.colorScheme.primary : null,
+              ),
+              onPressed: () => showDiscountDialog(context, row),
             ),
             IconButton(
               key: Key('edit-cell-${product.id}'),
