@@ -6,6 +6,7 @@ import 'package:lista_mercado/providers/products_provider.dart';
 import 'package:lista_mercado/providers/shopping_list_provider.dart';
 import 'package:lista_mercado/providers/supermarkets_provider.dart';
 import 'package:lista_mercado/screens/supermarkets_screen.dart';
+import 'package:lista_mercado/widgets/empty_state.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,6 +39,7 @@ void main() {
   ) async {
     await _pump(tester);
     expect(find.text('Aún no hay supermercados'), findsOneWidget);
+    expect(find.byType(EmptyState), findsOneWidget);
   });
 
   testWidgets('shows added supermarket name', (tester) async {
