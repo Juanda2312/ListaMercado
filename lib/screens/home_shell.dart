@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'supermarkets_screen.dart';
+import 'products_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -14,7 +15,7 @@ class _HomeShellState extends State<HomeShell> {
 
   // P1 y P3 son placeholders hasta las Tareas 8 y 9.
   static const _pages = <Widget>[
-    Placeholder(),
+    ProductsScreen(),
     SupermarketsScreen(),
     Placeholder(),
   ];
