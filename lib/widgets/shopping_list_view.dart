@@ -30,10 +30,17 @@ class ShoppingListView extends StatelessWidget {
           key: Key('dismiss-${row.product.id}'),
           direction: DismissDirection.endToStart,
           background: Container(
-            color: Colors.red,
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.error,
+              borderRadius: BorderRadius.circular(20),
+            ),
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 24),
-            child: const Icon(Icons.delete, color: Colors.white),
+            child: Icon(
+              Icons.delete,
+              color: Theme.of(context).colorScheme.onError,
+            ),
           ),
           onDismissed: (_) => _remove(context, row),
           child: _ListRowTile(
@@ -90,11 +97,11 @@ class _ListRowTile extends StatelessWidget {
       key: Key('list-row-${product.id}'),
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         onTap: () =>
             context.read<ShoppingListProvider>().toggleChecked(product.id),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 4, 8),
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -136,13 +143,18 @@ class _ListRowTile extends StatelessWidget {
                   ),
                 ],
               ),
-              Text(
-                supermarketName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: checked ? muted : theme.colorScheme.onSurfaceVariant,
+              Chip(
+                label: Text(
+                  supermarketName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                labelStyle: theme.textTheme.bodySmall?.copyWith(
+                  color: checked ? muted : null,
+                ),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               const SizedBox(height: 4),
               Row(
@@ -198,14 +210,14 @@ class _ListRowTile extends StatelessWidget {
                           key: Key('row-total-${product.id}'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
                             color: checked ? muted : null,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
                 ],
               ),
             ],

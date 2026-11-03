@@ -748,4 +748,49 @@ void main() {
       expect(app.shoppingList.quantityOf(id), 1);
     });
   });
+  group('filas de la lista', () {
+    testWidgets('supermarket name is shown as a chip on each row', (
+      tester,
+    ) async {
+      await _pump(tester);
+      expect(find.widgetWithText(Chip, 'Ara'), findsNWidgets(2));
+      expect(find.widgetWithText(Chip, 'Éxito'), findsNWidgets(2));
+      expect(find.widgetWithText(Chip, 'Otros'), findsOneWidget);
+    });
+
+    testWidgets('row with discount shows the base price struck through, the '
+        'final price and the percent once', (tester) async {
+      final app = await _pump(tester);
+      final id = _id(app, 'Leche');
+      await app.shoppingList.setTempPrice(id, 900);
+      await tester.pumpAndSettle();
+
+      final span =
+          tester.widget<Text>(find.byKey(Key('row-unit-$id'))).textSpan!
+              as TextSpan;
+      final struck = span.children!
+          .whereType<TextSpan>()
+          .where((s) => s.style?.decoration == TextDecoration.lineThrough)
+          .map((s) => s.text);
+      expect(struck, ['\$1.000']);
+      expect(find.textContaining('-10%', findRichText: true), findsOneWidget);
+    });
+
+    testWidgets('long product name wraps without overflow at 360×640 and '
+        '150 % text', (tester) async {
+      final app = await _pump(tester);
+      tester.view.physicalSize = const Size(360, 640);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      final p = await app.products.add(
+        name: 'Queso campesino semidescremado extra largo ' * 3,
+        price: 12500,
+      );
+      await app.shoppingList.addProduct(p.id, 3, tempPrice: 9000);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
