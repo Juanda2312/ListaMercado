@@ -344,6 +344,51 @@ void main() {
       expect(_text(tester, const Key('section-total-Ara')), '\$2.500');
     });
 
+    Size cardSize(WidgetTester tester) => tester.getSize(
+      find
+          .ancestor(
+            of: find.byKey(const Key('section-total-Ara')),
+            matching: find.byType(Card),
+          )
+          .first,
+    );
+
+    testWidgets('column width is 280 on a wide screen and 80 % of it on a '
+        'narrow one', (tester) async {
+      await _pump(tester); // 800 px
+      await _goToTable(tester);
+      expect(cardSize(tester).width, 280);
+
+      tester.view.physicalSize = const Size(360, 640);
+      await tester.pumpAndSettle();
+      expect(cardSize(tester).width, 288);
+    });
+
+    testWidgets('section header shows the product count', (tester) async {
+      await _pump(tester);
+      await _goToTable(tester);
+      expect(find.text('2 productos'), findsNWidgets(2)); // Ara y Éxito
+      expect(find.text('1 producto'), findsOneWidget); // Otros
+    });
+
+    testWidgets('long product name does not overflow at 360×640 and 150 % '
+        'text', (tester) async {
+      final app = await _pump(tester);
+      tester.view.physicalSize = const Size(360, 640);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      final p = await app.products.add(
+        name: 'Queso campesino semidescremado extra largo ' * 3,
+        price: 12500,
+      );
+      await app.shoppingList.addProduct(p.id, 3, tempPrice: 9000);
+      await tester.pumpAndSettle();
+      await _goToTable(tester);
+
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets("unassigned products appear in the 'Otros' column", (
       tester,
     ) async {
