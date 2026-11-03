@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'supermarkets_screen.dart';
 import 'products_screen.dart';
+import 'shopping_list_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -17,7 +18,7 @@ class _HomeShellState extends State<HomeShell> {
   static const _pages = <Widget>[
     ProductsScreen(),
     SupermarketsScreen(),
-    Placeholder(),
+    ShoppingListScreen(),
   ];
 
   @override
