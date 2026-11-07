@@ -204,12 +204,12 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 **Interfaces:**
 - Produce: proyecto que compila y pasa `flutter analyze`; paquete `lista_mercado`.
 
-- [ ] **Paso 1:** `flutter create --org com.listamercado --platforms android --project-name lista_mercado .`
-- [ ] **Paso 2:** `flutter pub add provider shared_preferences`
-- [ ] **Paso 3:** Poner `android:label="Lista Mercado"` en el `AndroidManifest.xml` principal; borrar `test/widget_test.dart`.
-- [ ] **Paso 4:** Reemplazar `lib/main.dart` por un `main()` mínimo que haga `runApp(const MaterialApp(home: Scaffold()))`.
-- [ ] **Paso 5:** Ejecutar `flutter analyze`. Esperado: `No issues found!`
-- [ ] **Paso 6:** Commit: `chore: scaffold flutter android project`
+- [x] **Paso 1:** `flutter create --org com.listamercado --platforms android --project-name lista_mercado .`
+- [x] **Paso 2:** `flutter pub add provider shared_preferences`
+- [x] **Paso 3:** Poner `android:label="Lista Mercado"` en el `AndroidManifest.xml` principal; borrar `test/widget_test.dart`.
+- [x] **Paso 4:** Reemplazar `lib/main.dart` por un `main()` mínimo que haga `runApp(const MaterialApp(home: Scaffold()))`.
+- [x] **Paso 5:** Ejecutar `flutter analyze`. Esperado: `No issues found!`
+- [x] **Paso 6:** Commit: `chore: scaffold flutter android project`
 
 ---
 
@@ -226,16 +226,16 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `class ShoppingItem { final String productId; final int quantity; final bool checked; const ShoppingItem({required this.productId, this.quantity = 1, this.checked = false}); ShoppingItem copyWith({int? quantity, bool? checked}); Map<String, dynamic> toJson(); factory ShoppingItem.fromJson(Map<String, dynamic> json); }`
   - `fromJson` lanza `FormatException` si falta un campo obligatorio (`id`, `name`, `productId`) o tiene tipo incorrecto.
 
-- [ ] **Paso 1: Test que falla** (`models_test.dart`):
+- [x] **Paso 1: Test que falla** (`models_test.dart`):
   - `product round-trips with null supermarketId and price`: `Product.fromJson(p.toJson())` conserva `id`, `name` y deja `supermarketId`/`price` en `null`.
   - `product round-trips with price 12500.5`: precio igual tras el round-trip.
   - `shopping item defaults to quantity 1 and unchecked`.
   - `shopping item copyWith changes only given fields`.
   - `fromJson throws FormatException when name is missing` (producto y supermercado).
-- [ ] **Paso 2:** `flutter test test/models_test.dart` → FALLA (archivos no existen).
-- [ ] **Paso 3:** Implementar las tres clases con las firmas de arriba.
-- [ ] **Paso 4:** `flutter test test/models_test.dart` → PASA.
-- [ ] **Paso 5:** Commit: `feat: add data models with json serialization`
+- [x] **Paso 2:** `flutter test test/models_test.dart` → FALLA (archivos no existen).
+- [x] **Paso 3:** Implementar las tres clases con las firmas de arriba.
+- [x] **Paso 4:** `flutter test test/models_test.dart` → PASA.
+- [X] **Paso 5:** Commit: `feat: add data models with json serialization`
 
 ---
 
@@ -251,15 +251,15 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `class LocalStorage { LocalStorage(SharedPreferences prefs); static Future<LocalStorage> open(); List<Supermarket> loadSupermarkets(); List<Product> loadProducts(); List<ShoppingItem> loadShoppingItems(); Future<void> saveSupermarkets(List<Supermarket> v); Future<void> saveProducts(List<Product> v); Future<void> saveShoppingItems(List<ShoppingItem> v); }`
   - Claves: `supermarkets_v1`, `products_v1`, `shopping_items_v1`; cada una guarda un `String` con una lista JSON.
 
-- [ ] **Paso 1: Test que falla** (usar `SharedPreferences.setMockInitialValues`):
+- [x] **Paso 1: Test que falla** (usar `SharedPreferences.setMockInitialValues`):
   - `loads empty lists on first launch` (sin claves).
   - `save then load returns same products`.
   - `corrupt json string yields empty list, no throw` (valor `'{no es json'`). **(Review Focus 4)**
   - `malformed entries are skipped, valid ones kept` (lista JSON con un elemento sin `name` y otro válido → 1 resultado). **(Review Focus 4)**
-- [ ] **Paso 2:** `flutter test test/local_storage_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar `LocalStorage`. Cada `load*` envuelve `jsonDecode` en `try/catch` y descarta elementos que lancen `FormatException`.
-- [ ] **Paso 4:** `flutter test test/local_storage_test.dart` → PASA.
-- [ ] **Paso 5:** Commit: `feat: add shared_preferences local storage`
+- [x] **Paso 2:** `flutter test test/local_storage_test.dart` → FALLA.
+- [x] **Paso 3:** Implementar `LocalStorage`. Cada `load*` envuelve `jsonDecode` en `try/catch` y descarta elementos que lancen `FormatException`.
+- [x] **Paso 4:** `flutter test test/local_storage_test.dart` → PASA.
+- [x] **Paso 5:** Commit: `feat: add shared_preferences local storage`
 
 ---
 
@@ -279,17 +279,17 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `const String kNoSupermarketFilter = '__none__';`
   - `List<Product> searchProducts(List<Product> products, {String query = '', String? supermarketFilter})` → `supermarketFilter == null` = todos; `kNoSupermarketFilter` = solo sin supermercado; otro valor = ese `supermarketId`. Coincidencia por `normalizeText(name).contains(normalizeText(query))`. Resultado ordenado por nombre normalizado.
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `normalizeText('  ÉXITO ') == 'exito'`; `normalizeText('Piña') == 'piña'`.
   - `parsePrice('1,5') == 1.5`; `parsePrice('1.5') == 1.5`; `parsePrice('12.500') == 12500`; `parsePrice('1.234.567') == 1234567`; `parsePrice('12.500,5') == 12500.5`. **(Review Focus 2)**
   - `parsePrice('') == null`; `parsePrice('   ') == null`; `parsePrice('abc') == null`; `parsePrice('-3') == null`; `parsePrice('0') == null`. **(Review Focus 2)**
   - `validatePriceInput('') == null`; `validatePriceInput('abc') == 'Precio inválido'`; `validatePriceInput('0') == 'Precio inválido'`.
   - `formatPrice(12500) == '\$12.500'`; `formatPrice(999) == '\$999'`; `formatPrice(1234567.5) == '\$1.234.567,5'`; `formatPrice(2.25) == '\$2,25'`.
   - `searchProducts`: `'lec'` encuentra "Leche"; `'cafe'` encuentra "Café"; filtro por id de supermercado devuelve solo esos; `kNoSupermarketFilter` devuelve solo los sin supermercado; consulta vacía devuelve todos ordenados por nombre.
-- [ ] **Paso 2:** `flutter test test/price_format_test.dart test/product_search_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar. Para `parsePrice`: quitar espacios; si coincide con `^\d{1,3}(\.\d{3})+(,\d+)?$` tratar los puntos como miles; en otro caso reemplazar `,` por `.` y usar `double.tryParse`; descartar ≤ 0.
-- [ ] **Paso 4:** Ejecutar los mismos tests → PASAN.
-- [ ] **Paso 5:** Commit: `feat: add text normalization, price parsing/formatting and product search`
+- [x] **Paso 2:** `flutter test test/price_format_test.dart test/product_search_test.dart` → FALLA.
+- [x] **Paso 3:** Implementar. Para `parsePrice`: quitar espacios; si coincide con `^\d{1,3}(\.\d{3})+(,\d+)?$` tratar los puntos como miles; en otro caso reemplazar `,` por `.` y usar `double.tryParse`; descartar ≤ 0.
+- [x] **Paso 4:** Ejecutar los mismos tests → PASAN.
+- [x] **Paso 5:** Commit: `feat: add text normalization, price parsing/formatting and product search`
 
 ---
 
@@ -306,13 +306,13 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `class ProductsProvider extends ChangeNotifier { ProductsProvider({required LocalStorage storage, void Function(String productId)? onRemoved}); List<Product> get products; Product? byId(String id); Future<Product> add({required String name, String? supermarketId, double? price}); Future<void> update(Product product); Future<void> remove(String id); Future<void> clearSupermarket(String supermarketId); }` — `add` recorta el nombre y lanza `ArgumentError` si queda vacío; `update` reemplaza el producto con el mismo `id`; `clearSupermarket` deja `supermarketId = null` solo en los productos de ese supermercado.
   - Ambos cargan desde `storage` en el constructor, persisten y llaman `notifyListeners()` tras cada mutación.
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - supermercados: `add trims name`; `add blank returns false and keeps list unchanged` **(RF1)**; `add duplicate ignoring case and accents returns false` (`'Éxito'` vs `'exito'`); `rename to existing name returns false`; `remove calls onRemoved with the id`; `state persists: new provider on same storage sees data`; `notifies listeners on add`.
   - productos: `add trims name and stores optional fields`; `add blank name throws ArgumentError` **(RF1)**; `add allows duplicate names`; `update persists price change`; `remove calls onRemoved with the id`; `clearSupermarket nulls only matching products` **(RF3)**; `state persists across instances`.
-- [ ] **Paso 2:** `flutter test test/providers_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar ambos providers con las firmas de arriba.
-- [ ] **Paso 4:** `flutter test test/providers_test.dart` → PASA.
-- [ ] **Paso 5:** Commit: `feat: add supermarkets and products providers`
+- [x] **Paso 2:** `flutter test test/providers_test.dart` → FALLA.
+- [x] **Paso 3:** Implementar ambos providers con las firmas de arriba.
+- [x] **Paso 4:** `flutter test test/providers_test.dart` → PASA.
+- [x] **Paso 5:** Commit: `feat: add supermarkets and products providers`
 
 ---
 
@@ -332,7 +332,7 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `removeProduct`: quita solo ese ítem; si el id no está en la lista, no hace nada (ni notifica). Lo usan la cascada de eliminación de productos y el deslizar-para-quitar de P3.
   - `restoreItem`: reinserta un `ShoppingItem` tal cual (cantidad y `checked` originales), para "Deshacer". Si ya hay un ítem con ese `productId`, no hace nada (nunca duplica).
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `addProduct twice sums quantities into one item` (2 + 3 → un ítem con 5). **(RF5)**
   - `addProduct with quantity 0 stores 1`.
   - `quantityOf returns null when absent and the current quantity when present`; `contains reflects membership`. **(RF5)**
@@ -343,10 +343,10 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `removeProduct removes only that item` **(RF3, RF6)**; `removeProduct on unknown id does nothing and does not notify` **(RF6)**; `clear empties the list`.
   - `restoreItem re-adds an item with its original quantity and checked state` **(RF6)**; `restoreItem does nothing if the product is already in the list` **(RF6)**.
   - `state persists across instances`.
-- [ ] **Paso 2:** `flutter test test/providers_test.dart` → FALLA en el grupo nuevo.
-- [ ] **Paso 3:** Implementar `ShoppingListProvider`.
-- [ ] **Paso 4:** `flutter test test/providers_test.dart` → PASA.
-- [ ] **Paso 5:** Commit: `feat: add shopping list provider`
+- [x] **Paso 2:** `flutter test test/providers_test.dart` → FALLA en el grupo nuevo.
+- [x] **Paso 3:** Implementar `ShoppingListProvider`.
+- [x] **Paso 4:** `flutter test test/providers_test.dart` → PASA.
+- [x] **Paso 5:** Commit: `feat: add shopping list provider`
 
 ---
 
@@ -364,7 +364,7 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `List<ListRow> buildRows(List<ShoppingItem> items, List<Product> products)` — omite ítems cuyo producto no existe; ordena por nombre normalizado.
   - `List<SupermarketSection> buildSections(List<ListRow> rows, List<Supermarket> supermarkets)` — supermercados por nombre, solo los que tienen filas; sección `Otros` (`supermarketId == null`) al final y solo si tiene filas; un producto cuyo `supermarketId` ya no existe va a `Otros`.
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `section total sums priced rows times quantity`: 2×1000 + 1×500 → `total == 2500`, `totalLabel == '\$2.500'`.
   - `unpriced row is excluded and marks label with (?)`: 2×1000 + fila sin precio → `total == 2000`, `hasUnpriced`, `totalLabel == '\$2.000 + (?)'`.
   - `section with only unpriced rows labels '\$0 + (?)'`.
@@ -373,10 +373,10 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `product pointing to a missing supermarket goes to Otros`. **(RF4)**
   - `empty sections are omitted`.
   - `buildRows skips items whose product no longer exists`. **(RF4)**
-- [ ] **Paso 2:** `flutter test test/list_grouping_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar con las firmas de arriba.
-- [ ] **Paso 4:** `flutter test test/list_grouping_test.dart` → PASA.
-- [ ] **Paso 5:** Commit: `feat: add list grouping and totals logic`
+- [x] **Paso 2:** `flutter test test/list_grouping_test.dart` → FALLA.
+- [x] **Paso 3:** Implementar con las firmas de arriba.
+- [x] **Paso 4:** `flutter test test/list_grouping_test.dart` → PASA.
+- [x] **Paso 5:** Commit: `feat: add list grouping and totals logic`
 
 ---
 
@@ -396,14 +396,14 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `Future<bool> confirmDialog(BuildContext context, {required String title, required String message, String confirmLabel = 'Confirmar'})` → `true` solo si se pulsa el botón de confirmar; cancelar o tocar fuera → `false`.
   - `class SupermarketsScreen extends StatelessWidget` — lista de nombres, FAB "Añadir", cada fila con editar y eliminar; añadir/renombrar con diálogo de texto; eliminar con `confirmDialog` cuyo mensaje aclara que los productos no se borran.
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `app_providers_test`: `removing a supermarket clears it from its products` y `removing a product removes it from the shopping list` usando `AppProviders.create` sobre `SharedPreferences` simulado. **(RF3)**
   - `supermarkets_screen_test`: `shows added supermarket name`; `blank name in dialog shows error and does not add` **(RF1)**; `delete asks confirmation and cancel keeps the supermarket`.
-- [ ] **Paso 2:** `flutter test test/app_providers_test.dart test/supermarkets_screen_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar `AppProviders`, `ListaMercadoApp`, `HomeShell`, `confirmDialog` y `SupermarketsScreen`; `main()` hace `WidgetsFlutterBinding.ensureInitialized()`, `LocalStorage.open()`, `runApp(ListaMercadoApp(...))`.
-- [ ] **Paso 4:** Ejecutar los tests → PASAN. Ejecutar `flutter analyze` → sin issues.
-- [ ] **Paso 5:** Verificación manual: `flutter run`, añadir/editar/eliminar un supermercado, cerrar la app por completo y reabrir → los datos persisten.
-- [ ] **Paso 6:** Commit: `feat: add app wiring, navigation shell and supermarkets screen`
+- [x] **Paso 2:** `flutter test test/app_providers_test.dart test/supermarkets_screen_test.dart` → FALLA.
+- [x] **Paso 3:** Implementar `AppProviders`, `ListaMercadoApp`, `HomeShell`, `confirmDialog` y `SupermarketsScreen`; `main()` hace `WidgetsFlutterBinding.ensureInitialized()`, `LocalStorage.open()`, `runApp(ListaMercadoApp(...))`.
+- [x] **Paso 4:** Ejecutar los tests → PASAN. Ejecutar `flutter analyze` → sin issues.
+- [x] **Paso 5:** Verificación manual: `flutter run`, añadir/editar/eliminar un supermercado, cerrar la app por completo y reabrir → los datos persisten.
+- [x] **Paso 6:** Commit: `feat: add app wiring, navigation shell and supermarkets screen`
 
 ---
 
@@ -427,7 +427,7 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
     4. Si no es `null` (ya está con cantidad `actual`) → `confirmDialog` con título "Producto ya en la lista", mensaje `"<nombre>" ya está en la lista con cantidad <actual>. ¿Sumar <n> más para un total de <actual + n>?` y `confirmLabel: 'Sumar'`. Solo si devuelve `true` se llama `addProduct(productId, n)`; si devuelve `false` la cantidad existente queda intacta.
   - Llaves para tests: `Key('product-tile-<id>')`, `Key('add-to-list-<id>')`.
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `product_form_screen_test`: `blank or whitespace name shows error and does not save` **(RF1)**; `price 'abc' shows 'Precio inválido'` **(RF2)**; `valid form with only a name saves a product without supermarket or price`; `editing preloads existing values`.
   - `products_screen_test`: `search 'cafe' shows 'Café' and hides others`; `supermarket filter shows only that supermarket's products`; `'Sin supermercado' filter shows only unassigned products`; `add-to-list dialog with quantity 3 adds item with quantity 3 and no confirmation when the product is not in the list`; `delete confirmation cancel keeps product, confirm removes it and its list item`.
   - `products_screen_test` (confirmación al sumar) **(RF5)**:
@@ -435,11 +435,11 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
     - `cancelling the sum confirmation keeps the existing quantity unchanged` (sigue en 2).
     - `confirming the sum updates the single list item to the summed quantity` (queda un solo ítem con 5).
     - `cancelling the quantity dialog itself does not ask for confirmation and changes nothing`.
-- [ ] **Paso 2:** `flutter test test/product_form_screen_test.dart test/products_screen_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar los tres archivos. Nombres largos: `Text(..., maxLines: 2, overflow: TextOverflow.ellipsis)` para que nunca desborden en pantallas pequeñas. En el flujo de "añadir a la lista", usar `if (!context.mounted) return;` después de cada `await` de diálogo antes de volver a usar `context`.
-- [ ] **Paso 4:** Ejecutar los tests → PASAN. `flutter analyze` → sin issues.
-- [ ] **Paso 5:** Verificación manual: crear productos (con y sin supermercado/precio), buscar con y sin tilde, filtrar, añadir a la lista con cantidad, **volver a añadir el mismo producto y comprobar el diálogo de confirmación (aceptar y cancelar)**, editar, eliminar.
-- [ ] **Paso 6:** Commit: `feat: add products screen, form, search/filter and add-to-list with sum confirmation`
+- [x] **Paso 2:** `flutter test test/product_form_screen_test.dart test/products_screen_test.dart` → FALLA.
+- [x] **Paso 3:** Implementar los tres archivos. Nombres largos: `Text(..., maxLines: 2, overflow: TextOverflow.ellipsis)` para que nunca desborden en pantallas pequeñas. En el flujo de "añadir a la lista", usar `if (!context.mounted) return;` después de cada `await` de diálogo antes de volver a usar `context`.
+- [x] **Paso 4:** Ejecutar los tests → PASAN. `flutter analyze` → sin issues.
+- [x] **Paso 5:** Verificación manual: crear productos (con y sin supermercado/precio), buscar con y sin tilde, filtrar, añadir a la lista con cantidad, **volver a añadir el mismo producto y comprobar el diálogo de confirmación (aceptar y cancelar)**, editar, eliminar.
+- [x] **Paso 6:** Commit: `feat: add products screen, form, search/filter and add-to-list with sum confirmation`
 
 ---
 
@@ -460,7 +460,7 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - Tachado = `TextDecoration.lineThrough` + color atenuado; nunca cambia totales.
   - Llaves para tests: `Key('row-name-<productId>')` (lista), `Key('cell-name-<productId>')` (tabla), `Key('section-total-<title>')`, `Key('dismiss-<productId>')` (fila deslizable).
 
-- [ ] **Paso 1: Test que falla:**
+- [X] **Paso 1: Test que falla:**
   - `tapping a row in the list view strikes the name in both list and table views` (la decoración `lineThrough` aparece en `row-name-` y en `cell-name-`); tocarla de nuevo la quita en ambas.
   - `striking an item does not change the section total`.
   - `section with an unpriced product shows '+ (?)' in its total label`.
@@ -477,11 +477,11 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
     - `removing the last item shows 'La lista está vacía'`.
     - `swipe shows a SnackBar with 'Deshacer'; tapping it restores the item with its original quantity and checked state`.
     - `swiping a checked item then undoing keeps it checked`.
-- [ ] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar los tres archivos; las vistas leen `buildRows`/`buildSections` en cada `build` (sin estado duplicado). En `ShoppingListView`, capturar el `ShoppingItem` (`row.item`) en el `onDismissed` antes de llamar `removeProduct`, para poder restaurarlo.
-- [ ] **Paso 4:** `flutter test test/shopping_list_screen_test.dart` → PASA. Luego `flutter test` completo → todo en verde.
-- [ ] **Paso 5:** Verificación manual en dispositivo: tachar desde la lista y ver la tabla; tachar desde la tabla y ver la lista; acciones masivas; **deslizar un producto para quitarlo (y probar "Deshacer"), confirmar que sigue existiendo en la pantalla de Productos**; límites de pantalla pequeña (nombres largos, 5+ supermercados con scroll horizontal).
-- [ ] **Paso 6:** Commit: `feat: add shopping list screen with list/table views, swipe-to-remove and bulk actions`
+- [x] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA.
+- [x] **Paso 3:** Implementar los tres archivos; las vistas leen `buildRows`/`buildSections` en cada `build` (sin estado duplicado). En `ShoppingListView`, capturar el `ShoppingItem` (`row.item`) en el `onDismissed` antes de llamar `removeProduct`, para poder restaurarlo.
+- [x] **Paso 4:** `flutter test test/shopping_list_screen_test.dart` → PASA. Luego `flutter test` completo → todo en verde.
+- [x] **Paso 5:** Verificación manual en dispositivo: tachar desde la lista y ver la tabla; tachar desde la tabla y ver la lista; acciones masivas; **deslizar un producto para quitarlo (y probar "Deshacer"), confirmar que sigue existiendo en la pantalla de Productos**; límites de pantalla pequeña (nombres largos, 5+ supermercados con scroll horizontal).
+- [X] **Paso 6:** Commit: `feat: add shopping list screen with list/table views, swipe-to-remove and bulk actions`
 
 ---
 
@@ -495,13 +495,13 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 - Consume: app completa.
 - Produce: `build/app/outputs/flutter-apk/app-release.apk` firmado con un keystore propio.
 
-- [ ] **Paso 1:** Generar un keystore con `keytool -genkey -v -keystore ~/lista-mercado.jks -keyalg RSA -keysize 2048 -validity 10000 -alias lista`; guardar una copia de respaldo y la contraseña. (Si se pierde, el usuario final tendrá que desinstalar para poder actualizar la app.)
-- [ ] **Paso 2:** Crear `android/key.properties` (`storePassword`, `keyPassword`, `keyAlias`, `storeFile`) y configurar `signingConfigs.release` en el archivo gradle generado; confirmar que `key.properties` y `*.jks` están en `.gitignore`.
-- [ ] **Paso 3:** `flutter test` y `flutter analyze` → todo en verde.
-- [ ] **Paso 4:** `flutter build apk --release` → genera `app-release.apk`.
-- [ ] **Paso 5:** Verificar permisos: `aapt dump permissions build/app/outputs/flutter-apk/app-release.apk` → no incluye `android.permission.INTERNET`.
-- [ ] **Paso 6:** Instalar con `adb install -r build/app/outputs/flutter-apk/app-release.apk` y recorrer la lista de humo: crear 2 supermercados y 4 productos (uno sin precio, uno sin supermercado) → añadir a la lista → **volver a añadir uno ya presente y confirmar el diálogo de suma** → tachar/destachar desde ambas vistas → **deslizar un producto para quitarlo y deshacer** → verificar `TOTAL + (?)` → cerrar la app desde recientes y reabrir → todo persiste.
-- [ ] **Paso 7:** Commit: `chore: configure release signing`
+- [x] **Paso 1:** Generar un keystore con `keytool -genkey -v -keystore ~/lista-mercado.jks -keyalg RSA -keysize 2048 -validity 10000 -alias lista`; guardar una copia de respaldo y la contraseña. (Si se pierde, el usuario final tendrá que desinstalar para poder actualizar la app.)
+- [x] **Paso 2:** Crear `android/key.properties` (`storePassword`, `keyPassword`, `keyAlias`, `storeFile`) y configurar `signingConfigs.release` en el archivo gradle generado; confirmar que `key.properties` y `*.jks` están en `.gitignore`.
+- [x] **Paso 3:** `flutter test` y `flutter analyze` → todo en verde.
+- [x] **Paso 4:** `flutter build apk --release` → genera `app-release.apk`.
+- [x] **Paso 5:** Verificar permisos: `aapt dump permissions build/app/outputs/flutter-apk/app-release.apk` → no incluye `android.permission.INTERNET`.
+- [x] **Paso 6:** Instalar con `adb install -r build/app/outputs/flutter-apk/app-release.apk` y recorrer la lista de humo: crear 2 supermercados y 4 productos (uno sin precio, uno sin supermercado) → añadir a la lista → **volver a añadir uno ya presente y confirmar el diálogo de suma** → tachar/destachar desde ambas vistas → **deslizar un producto para quitarlo y deshacer** → verificar `TOTAL + (?)` → cerrar la app desde recientes y reabrir → todo persiste.
+- [x] **Paso 7:** Commit: `chore: configure release signing`
 
 ---
 
@@ -520,18 +520,18 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `ListTotal buildTotal(List<ListRow> rows)` — suma las filas con precio (tachadas incluidas) y marca `hasUnpriced` si alguna no tiene precio.
   - `ShoppingListScreen`: el título de la `AppBar` pasa a ser una columna con `Total: <label>` (`Key('list-total')`) y, solo si hay presupuesto, `Presupuesto <monto> · Restante: <remainingLabel>` (`Key('list-budget')`), con el restante en verde si ≥ 0 y en rojo si < 0 (tonos más claros en tema oscuro). Nuevo botón de cartera (`Key('budget-button')`) en las acciones que abre un diálogo (`Key('budget-input')`) con "Cancelar", "Quitar" (solo si ya hay presupuesto) y "Guardar"; un monto inválido deja el diálogo abierto con el error `Precio inválido`. (En 1.0.3 este título se mueve a `BudgetSummary`, Tarea 18.)
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `buildTotal sums all priced rows and flags unpriced`: 2×1000 + fila sin precio → `total == 2000`, `label == '\$2.000 + (?)'`, `remainingLabel(5000) == '\$3.000 - (?)'`, `isOverBudget(5000) == false`.
   - `buildTotal negative remaining and no unpriced`: 6×1000 con presupuesto 5000 → `remainingLabel(5000) == '-\$1.000'`, `isOverBudget(5000) == true`.
   - `budget persists, can be removed, and survives clear`. **(RF7)**
   - `setBudget ignores non-positive values`. **(RF7)**
   - Pantalla (datos de prueba: total `$4.700 + (?)`): `app bar shows the grand total with (?)` y no hay `list-budget`; `budget above total shows green remaining` (5.000 → `$300 - (?)`); `budget below total shows red negative remaining` (4000 → `-$700 - (?)`); `invalid budget keeps dialog open; Quitar removes it`. **(RF7)**
-- [ ] **Paso 2:** `flutter test` → FALLA en los tests nuevos.
-- [ ] **Paso 3:** Implementar. Ajustar `toolbarHeight` de la `AppBar` (72) para que quepan las dos líneas. Los textos usan `maxLines: 1` y `TextOverflow.ellipsis`.
-- [ ] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
-- [ ] **Paso 5:** Verificación manual: añadir productos con y sin precio → ver `Total: $X + (?)`; fijar un presupuesto mayor (verde) y uno menor (rojo con `-`); quitar el presupuesto; limpiar la lista y confirmar que el presupuesto se conserva; cerrar la app desde recientes y reabrir → persiste. Probar en tema oscuro.
-- [ ] **Paso 6:** Subir la versión a `1.0.1+2` en `pubspec.yaml` y compilar el release como en la Tarea 10 (mismo keystore, para conservar los datos al actualizar).
-- [ ] **Paso 7:** Commit: `feat: add list grand total and budget with remaining in app bar`
+- [x] **Paso 2:** `flutter test` → FALLA en los tests nuevos.
+- [x] **Paso 3:** Implementar. Ajustar `toolbarHeight` de la `AppBar` (72) para que quepan las dos líneas. Los textos usan `maxLines: 1` y `TextOverflow.ellipsis`.
+- [x] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
+- [x] **Paso 5:** Verificación manual: añadir productos con y sin precio → ver `Total: $X + (?)`; fijar un presupuesto mayor (verde) y uno menor (rojo con `-`); quitar el presupuesto; limpiar la lista y confirmar que el presupuesto se conserva; cerrar la app desde recientes y reabrir → persiste. Probar en tema oscuro.
+- [x] **Paso 6:** Subir la versión a `1.0.1+2` en `pubspec.yaml` y compilar el release como en la Tarea 10 (mismo keystore, para conservar los datos al actualizar).
+- [x] **Paso 7:** Commit: `feat: add list grand total and budget with remaining in app bar`
 
 ---
 
@@ -553,14 +553,14 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `ShoppingItem`: campo `final double? tempPrice`; `copyWith({int? quantity, bool? checked, double? tempPrice, bool clearTempPrice = false})`; `toJson` incluye `tempPrice`; `fromJson` lee `tempPrice` como `null` si falta o no es un número positivo y finito (nunca lanza por este campo).
   - `ListRow`: `unitPrice = item.tempPrice ?? product.price`; `double? get basePrice => product.price`; `bool get hasDiscount => item.tempPrice != null`; `double? get discountPercent` (vía `percentFromPrice`, `null` si no aplica). `lineTotal` usa `unitPrice`. Como `SupermarketSection.hasUnpriced` y `buildTotal` ya se basan en `unitPrice`, una fila con `tempPrice` cuenta como "con precio".
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `discount_test`: `priceFromPercent(10000, 15) == 8500`; `percentFromPrice(10000, 8500) == 15`; `percentFromPrice(10000, 9000) == 10`; límites: `percent` 0, 100, -5 → `null`; `price` igual o mayor al base → `null`; `base` 0 → `null`; redondeo a 2 decimales; `formatPercent(15) == '15%'`, `formatPercent(12.5) == '12,5%'`; `validatePercentInput('') == null`, `'abc'` y `'100'` → `'Descuento inválido'`. **(RF8)**
   - `models_test`: `tempPrice` round-trip; ausente → `null`; `tempPrice` de tipo incorrecto o ≤ 0 → `null` sin lanzar excepción; `copyWith(clearTempPrice: true)` lo quita; `copyWith` sin `tempPrice` lo conserva. **(RF8)**
   - `list_grouping_test`: fila con `tempPrice` usa ese precio en `lineTotal`; fila sin precio base pero con `tempPrice` no marca `(?)` ni en la sección ni en `buildTotal`; `discountPercent` es `null` si `tempPrice >= basePrice`. **(RF8)**
-- [ ] **Paso 2:** `flutter test test/discount_test.dart test/models_test.dart test/list_grouping_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar.
-- [ ] **Paso 4:** Mismos tests → PASAN; `flutter test` completo en verde (los tests de 1.0.1 no deben cambiar).
-- [ ] **Paso 5:** Commit: `feat: add temporary price to shopping items and discount utils`
+- [x] **Paso 2:** `flutter test test/discount_test.dart test/models_test.dart test/list_grouping_test.dart` → FALLA.
+- [x] **Paso 3:** Implementar.
+- [x] **Paso 4:** Mismos tests → PASAN; `flutter test` completo en verde (los tests de 1.0.1 no deben cambiar).
+- [x] **Paso 5:** Commit: `feat: add temporary price to shopping items and discount utils`
 
 ---
 
@@ -577,17 +577,17 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `Future<void> setTempPrice(String productId, double? value)` → `null` quita el descuento; valores no positivos o no finitos se ignoran; ids que no están en la lista se ignoran (sin notificar).
   - `restoreItem` ya conserva `tempPrice` porque reinserta el `ShoppingItem` tal cual.
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `addProduct with tempPrice stores it on a new item`.
   - `addProduct without tempPrice keeps the existing tempPrice when summing`.
   - `addProduct with tempPrice replaces the existing one`.
   - `setTempPrice sets, changes and removes the discount`; `setTempPrice ignores non-positive values and unknown ids (no notify)`.
   - `tempPrice persists across instances`.
   - `restoreItem keeps the tempPrice`. **(RF8)**
-- [ ] **Paso 2:** `flutter test test/providers_test.dart` → FALLA en los tests nuevos.
-- [ ] **Paso 3:** Implementar.
-- [ ] **Paso 4:** `flutter test test/providers_test.dart` → PASA.
-- [ ] **Paso 5:** Commit: `feat: support temporary price in shopping list provider`
+- [x] **Paso 2:** `flutter test test/providers_test.dart` → FALLA en los tests nuevos.
+- [x] **Paso 3:** Implementar.
+- [x] **Paso 4:** `flutter test test/providers_test.dart` → PASA.
+- [x] **Paso 5:** Commit: `feat: support temporary price in shopping list provider`
 
 ---
 
@@ -605,14 +605,14 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - `_QuantityDialog` recibe el producto, muestra `QuantityStepper` + `DiscountFields` (opcional; dejarlo vacío no cambia nada) y devuelve `({int quantity, double? tempPrice})`. El botón "Añadir" se deshabilita mientras algún campo sea inválido.
   - Flujo: si el producto ya está en la lista y el diálogo trae `tempPrice`, el mensaje de confirmación añade `Se aplicará el precio temporal <precio>.`; si no, el mensaje no cambia. Tras confirmar se llama `addProduct(productId, n, tempPrice: tempPrice)`.
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `discount_fields_test`: escribir `15` en % con base 10000 → precio final `8500`; escribir `8500` en precio → % `15%`; vaciar un campo vacía el otro; `abc` y `100` muestran `Descuento inválido`; precio final ≥ base muestra error; sin precio base el campo % está deshabilitado y el precio final funciona. **(RF8)**
   - `products_screen_test`: añadir con descuento por % guarda el `tempPrice` correcto; añadir con precio final guarda el `tempPrice`; añadir sin tocar los campos no guarda descuento (comportamiento 1.0.1 intacto); producto ya en la lista + descuento → el diálogo de suma lo menciona y al confirmar reemplaza el `tempPrice`; sin descuento nuevo se conserva el existente.
-- [ ] **Paso 2:** `flutter test test/discount_fields_test.dart test/products_screen_test.dart` → FALLA.
-- [ ] **Paso 3:** Implementar. Usar `if (!context.mounted) return;` después de cada `await`.
-- [ ] **Paso 4:** Tests → PASAN. `flutter test` completo en verde; `flutter analyze` sin issues.
-- [ ] **Paso 5:** Verificación manual: añadir con %, con precio final y sin descuento; producto sin precio base; volver a añadir uno ya presente con y sin descuento.
-- [ ] **Paso 6:** Commit: `feat: add discount fields to the add-to-list dialog`
+- [x] **Paso 2:** `flutter test test/discount_fields_test.dart test/products_screen_test.dart` → FALLA.
+- [x] **Paso 3:** Implementar. Usar `if (!context.mounted) return;` después de cada `await`.
+- [x] **Paso 4:** Tests → PASAN. `flutter test` completo en verde; `flutter analyze` sin issues.
+- [x] **Paso 5:** Verificación manual: añadir con %, con precio final y sin descuento; producto sin precio base; volver a añadir uno ya presente con y sin descuento.
+- [x] **Paso 6:** Commit: `feat: add discount fields to the add-to-list dialog`
 
 ---
 
@@ -629,18 +629,18 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
   - Vista **Por supermercado**: botón equivalente (`Key('discount-cell-<productId>')`, `iconSize: 20`, `VisualDensity.compact`) junto al botón de editar; `_columnWidth` pasa de 160 a 184 (en 1.0.3 el ancho pasa a ser adaptable, ver Tarea 17). La línea `cantidad × precio` muestra el precio efectivo y, si hay descuento, `(-<porcentaje>)`.
   - Guardar llama `setTempPrice(productId, valor)`; Quitar llama `setTempPrice(productId, null)`. Los totales por supermercado, el total general y el presupuesto se actualizan solos.
 
-- [ ] **Paso 1: Test que falla:**
+- [x] **Paso 1: Test que falla:**
   - `discount button on a list row opens the dialog; saving a % sets tempPrice and updates line total, section total, grand total and remaining budget`. **(RF8)**
   - `editing an existing discount preloads both fields; Quitar removes it and restores the base price`.
   - `product without base price: discount via final price makes the row stop counting as (?)`.
   - `the table cell shows the discounted price and the discount button works there too`.
   - `swiping a row with discount and tapping Deshacer restores the discount`.
   - `striking an item with discount does not change totals`.
-- [ ] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
-- [ ] **Paso 3:** Implementar.
-- [ ] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
-- [ ] **Paso 5:** Verificación manual en dispositivo y en tema oscuro: añadir, modificar y quitar descuento en ambas vistas; ver cómo cambian los totales y el restante del presupuesto; cerrar la app desde recientes y reabrir → persiste; pantalla pequeña (nombre largo + dos botones en la celda).
-- [ ] **Paso 6:** Commit: `feat: edit discount from the shopping list and table views`
+- [x] **Paso 2:** `flutter test test/shopping_list_screen_test.dart` → FALLA en los tests nuevos.
+- [x] **Paso 3:** Implementar.
+- [x] **Paso 4:** `flutter test` completo → verde; `flutter analyze` → sin issues.
+- [x] **Paso 5:** Verificación manual en dispositivo y en tema oscuro: añadir, modificar y quitar descuento en ambas vistas; ver cómo cambian los totales y el restante del presupuesto; cerrar la app desde recientes y reabrir → persiste; pantalla pequeña (nombre largo + dos botones en la celda).
+- [x] **Paso 6:** Commit: `feat: edit discount from the shopping list and table views`
 
 ---
 
@@ -653,14 +653,14 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 - Consume: app completa con las Tareas 12–15.
 - Produce: `build/app/outputs/flutter-apk/app-release.apk` firmado con el mismo keystore que 1.0.1, y un release `v1.0.2` en GitHub con `ListaMercado.apk`.
 
-- [ ] **Paso 1:** En `feature/discount-1.0.2`, subir la versión a `1.0.2+3` en `pubspec.yaml`.
-- [ ] **Paso 2:** `dart format .`, `flutter analyze` y `flutter test` → todo en verde.
-- [ ] **Paso 3:** Commit: `chore: bump version to 1.0.2`. Fusionar la función en `develop` (`--no-ff`) y borrar la rama temporal, según "Flujo de ramas".
-- [ ] **Paso 4:** Fusionar `develop` en `main` (`--no-ff`) y crear el tag `v1.0.2`, según "Flujo de ramas".
-- [ ] **Paso 5:** Desde `main`: `flutter build apk --release` (mismo keystore, para conservar los datos al actualizar).
-- [ ] **Paso 6:** Verificar que no hay permiso `INTERNET` (`aapt dump permissions`) y la firma (`apksigner verify --print-certs`).
-- [ ] **Paso 7:** `adb install -r build/app/outputs/flutter-apk/app-release.apk` sobre la 1.0.1 y comprobar que los datos antiguos se conservan y que la lista existente abre sin descuentos; recorrer la lista de humo con descuentos (añadir con %, con precio final, editar y quitar desde la lista y la tabla, verificar totales y presupuesto, cerrar y reabrir).
-- [ ] **Paso 8:** Copiar el APK como `ListaMercado.apk` (sin commitearlo), crear el release `v1.0.2` en GitHub adjuntándolo y volver a `develop` (`git checkout develop && git merge main`).
+- [x] **Paso 1:** En `feature/discount-1.0.2`, subir la versión a `1.0.2+3` en `pubspec.yaml`.
+- [x] **Paso 2:** `dart format .`, `flutter analyze` y `flutter test` → todo en verde.
+- [x] **Paso 3:** Commit: `chore: bump version to 1.0.2`. Fusionar la función en `develop` (`--no-ff`) y borrar la rama temporal, según "Flujo de ramas".
+- [x] **Paso 4:** Fusionar `develop` en `main` (`--no-ff`) y crear el tag `v1.0.2`, según "Flujo de ramas".
+- [x] **Paso 5:** Desde `main`: `flutter build apk --release` (mismo keystore, para conservar los datos al actualizar).
+- [x] **Paso 6:** Verificar que no hay permiso `INTERNET` (`aapt dump permissions`) y la firma (`apksigner verify --print-certs`).
+- [x] **Paso 7:** `adb install -r build/app/outputs/flutter-apk/app-release.apk` sobre la 1.0.1 y comprobar que los datos antiguos se conservan y que la lista existente abre sin descuentos; recorrer la lista de humo con descuentos (añadir con %, con precio final, editar y quitar desde la lista y la tabla, verificar totales y presupuesto, cerrar y reabrir).
+- [x] **Paso 8:** Copiar el APK como `ListaMercado.apk` (sin commitearlo), crear el release `v1.0.2` en GitHub adjuntándolo y volver a `develop` (`git checkout develop && git merge main`).
 
 ---
 
@@ -779,13 +779,13 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 
 - [x] **Paso 1:** Actualizar `README.md`: en *Funciones*, añadir el punto **Diseño (v1.0.3)** (tema claro/oscuro según el sistema, tarjetas adaptables al ancho, resumen de total y presupuesto con barra de progreso); en *Tecnología*, mencionar Material 3 con tema propio claro y oscuro; en *Estructura*, añadir el resumen de presupuesto y los estados vacíos a la lista de widgets; en *Generar el APK release*, actualizar los ejemplos de versión (`1.0.3+4`) y de etiqueta (`v1.0.3`). Revisar que no se prometa nada que no esté en la app.
 - [x] **Paso 2:** En `feature/redesign-1.0.3`, subir la versión a `1.0.3+4` en `pubspec.yaml`.
-- [ ] **Paso 3:** `dart format .`, `flutter analyze` y `flutter test` → todo en verde.
-- [ ] **Paso 4:** Commit: `chore: bump version to 1.0.3`. Fusionar la función en `develop` (`--no-ff`) y borrar la rama temporal, según "Flujo de ramas".
-- [ ] **Paso 5:** Fusionar `develop` en `main` (`--no-ff`) y crear el tag `v1.0.3`.
-- [ ] **Paso 6:** Desde `main`: `flutter build apk --release` (mismo keystore, para conservar los datos al actualizar).
-- [ ] **Paso 7:** Verificar que no hay permiso `INTERNET` (`aapt dump permissions`) y la firma (`apksigner verify --print-certs`).
-- [ ] **Paso 8:** `adb install -r build/app/outputs/flutter-apk/app-release.apk` sobre la 1.0.2 y comprobar que los datos se conservan; recorrer la lista de humo completa en claro y oscuro, vertical y horizontal.
-- [ ] **Paso 9:** Copiar el APK como `ListaMercado.apk` (sin commitearlo), crear el release `v1.0.3` en GitHub adjuntándolo y volver a `develop` (`git checkout develop && git merge main`).
+- [x] **Paso 3:** `dart format .`, `flutter analyze` y `flutter test` → todo en verde.
+- [x] **Paso 4:** Commit: `chore: bump version to 1.0.3`. Fusionar la función en `develop` (`--no-ff`) y borrar la rama temporal, según "Flujo de ramas".
+- [x] **Paso 5:** Fusionar `develop` en `main` (`--no-ff`) y crear el tag `v1.0.3`.
+- [x] **Paso 6:** Desde `main`: `flutter build apk --release` (mismo keystore, para conservar los datos al actualizar).
+- [x] **Paso 7:** Verificar que no hay permiso `INTERNET` (`aapt dump permissions`) y la firma (`apksigner verify --print-certs`).
+- [x] **Paso 8:** `adb install -r build/app/outputs/flutter-apk/app-release.apk` sobre la 1.0.2 y comprobar que los datos se conservan; recorrer la lista de humo completa en claro y oscuro, vertical y horizontal.
+- [x] **Paso 9:** Copiar el APK como `ListaMercado.apk` (sin commitearlo), crear el release `v1.0.3` en GitHub adjuntándolo y volver a `develop` (`git checkout develop && git merge main`).
 
 ---
 
