@@ -2,7 +2,12 @@
 
 App de Android para armar la lista del mercado y saber cuánto vas a gastar en cada supermercado antes de salir de casa. Funciona sin internet y no te pide cuenta.
 
-<!-- Capturas: lista, por supermercado, presupuesto, tema oscuro -->
+<p align="center">
+  <img src="docs/screenshots/01-lista.png" width="23%" alt="Lista de mercado con total, presupuesto y barra de progreso">
+  <img src="docs/screenshots/02-por-supermercado.png" width="23%" alt="Vista por supermercado, una columna por tienda">
+  <img src="docs/screenshots/03-descuento.png" width="23%" alt="Añadir un producto a la lista con descuento">
+  <img src="docs/screenshots/05-claro.png" width="23%" alt="Lista de mercado en tema claro">
+</p>
 
 ## Cómo se usa
 
@@ -16,7 +21,11 @@ App de Android para armar la lista del mercado y saber cuánto vas a gastar en c
 
 ### Las siguientes veces
 
-Tus productos y supermercados ya están, así que casi todo se reduce a los pasos 3, 4 y 5. Entra a *Productos*, añade a la lista lo que necesites, y si la lista anterior se parece a la de hoy, reutilízala destachándola. El presupuesto se conserva al limpiar la lista, no tienes que ponerlo cada vez.
+Tus productos y supermercados ya están, así que casi todo se reduce a los pasos 3, 4 y 5. Entra a *Productos* y busca lo que necesites: el buscador no distingue mayúsculas ni tildes, y puedes filtrar por supermercado. Si la lista anterior se parece a la de hoy, reutilízala destachándola. El presupuesto se conserva al limpiar la lista, no tienes que ponerlo cada vez.
+
+<p align="center">
+  <img src="docs/screenshots/04-productos.png" width="30%" alt="Productos con buscador y filtro por supermercado">
+</p>
 
 ¿Encontraste algo que no está en tu catálogo? Créalo desde *Productos* en cualquier momento y añádelo a la lista.
 
