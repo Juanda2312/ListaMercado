@@ -1,138 +1,58 @@
 # Lista Mercado
 
-App Android 100% local para organizar las compras del mercado: gestiona productos y supermercados, y arma una lista de compras con totales por supermercado. No usa internet ni cuentas; todo se guarda en el teléfono.
+App de Android para armar la lista del mercado y saber cuánto vas a gastar en cada supermercado antes de salir de casa. Funciona sin internet y no te pide cuenta.
 
-## Flujo de uso
+<!-- Capturas: lista, por supermercado, presupuesto, tema oscuro -->
 
-### Primera vez
+## Cómo se usa
 
-1. **Crear supermercados:** en la pestaña *Supermercados*, añade los que uses.
-2. **Crear productos:** en la pestaña *Productos*, añade cada producto con su nombre y, si quieres, su supermercado y precio.
-3. **Armar la lista:** cuando vayas a hacer mercado, toca el carrito de cada producto para añadirlo a la lista con su cantidad (y un descuento, si aplica).
-   - *Opcional:* fija un presupuesto con el icono de cartera en la pestaña *Lista* para ver cuánto te queda mientras agregas productos.
-4. **En el mercado:** ve tachando los productos a medida que los encuentras.
-5. **Al terminar** (paso opcional):
-   - Usa *Limpiar lista* para empezar de cero la próxima vez, o
-   - Si tus compras suelen repetirse, usa *Tachar/Destachar todos* para destachar toda la lista y quita deslizando solo los productos que no necesites.
+### La primera vez
 
-### Flujo regular
+1. **Crea tus supermercados.** En la pestaña *Supermercados*, añade los que uses.
+2. **Crea tus productos.** En *Productos*, añade cada uno con su nombre. El supermercado y el precio los pones si quieres.
+3. **Arma la lista.** Cuando vayas a hacer mercado, toca el carrito de cada producto y mándalo a la lista con su cantidad (y un descuento, si lo hay). Si quieres controlar el gasto, fija un presupuesto con el icono de cartera en la pestaña *Lista*.
+4. **En el mercado,** ve tachando lo que compras. La lista se puede ver normal o *Por supermercado*, con una columna por tienda y su total.
+5. **Al terminar,** tienes dos caminos. Con *Limpiar lista* empiezas de cero la próxima vez. Si tus compras se repiten, usa *Tachar/Destachar todos* para dejar todo sin tachar y quita deslizando solo lo que esta vez no necesites.
 
-Los productos y supermercados ya existen, así que:
+### Las siguientes veces
 
-1. **Armar la lista:** entra a la pestaña *Productos* y añade directamente a la lista los que necesites, con su cantidad (y un descuento, si aplica). Si tu lista anterior se parece a la de hoy, puedes reutilizarla destachándola.
-   - *Opcional:* fija o ajusta el presupuesto con el icono de cartera en la pestaña *Lista*.
-> Si encuentras un producto nuevo que no está en el catálogo, en cualquier momento puedes crearlo desde Productos y añadirlo a la lista.
+Tus productos y supermercados ya están, así que casi todo se reduce a los pasos 3, 4 y 5. Entra a *Productos*, añade a la lista lo que necesites, y si la lista anterior se parece a la de hoy, reutilízala destachándola. El presupuesto se conserva al limpiar la lista, no tienes que ponerlo cada vez.
 
-2. **En el mercado:** ve tachando los productos a medida que los encuentras.
-3. **Al terminar** (paso opcional):
-   - Usa *Limpiar lista* para empezar de cero la próxima vez, o
-   - Si tus compras suelen repetirse, usa *Tachar/Destachar todos* para destachar toda la lista y quita deslizando solo los productos que no necesites.
+¿Encontraste algo que no está en tu catálogo? Créalo desde *Productos* en cualquier momento y añádelo a la lista.
 
-> El presupuesto se conserva al limpiar la lista, así que no tienes que volver a ponerlo cada vez.
+## Lo que trae
 
-## Funciones
+- **Presupuesto.** Es opcional. La app te dice cuánto te queda: en verde mientras alcanza, en rojo cuando te pasas.
+- **Descuentos.** Escribes el porcentaje o el precio final y la app calcula el otro. Solo vale para esa lista, el precio del producto no cambia.
+- **Productos sin precio.** El total te lo avisa con `$X + (?)` en vez de contarlos como gratis.
+- **Tachar no resta.** Lo tachado sigue sumando en el total. Sirve para marcar lo que ya compraste, nada más.
+- **Quitar un producto.** Desliza la fila. Si te equivocas, aparece el botón de deshacer.
+- **Tema claro u oscuro**, según lo que tenga tu teléfono.
 
-- **Productos:** nombre (obligatorio), supermercado y precio (opcionales). Añadir, editar, eliminar, buscar (sin distinguir mayúsculas ni tildes) y filtrar por supermercado.
-- **Supermercados:** solo el nombre, sin repetidos. Al eliminar uno, sus productos pasan a "Otros".
-- **Lista de mercado:**
-  - Vista **Lista** (cantidad, precio unitario y total por producto) y vista **Por supermercado** (una columna por supermercado y una columna **Otros**).
-  - Tachar y destachar un producto, los de un supermercado o todos; el tachado se sincroniza entre ambas vistas y no cambia los totales.
-  - Cambiar cantidades, limpiar la lista y quitar un producto deslizando la fila (con opción de deshacer).
-  - Si un supermercado tiene productos sin precio, su total se muestra como `$X + (?)`.
-  - Añadir un producto que ya está en la lista pide confirmación antes de sumar la cantidad.
-  - **Total y presupuesto (v1.0.1):** el resumen superior muestra el total general de la lista (`$X + (?)` si hay productos sin precio). Con el icono de cartera se fija un presupuesto opcional y el resumen muestra el restante (presupuesto − total), como `$RESTANTE - (?)` si hay productos sin precio. El restante se ve en verde si es positivo o cero y en rojo si es negativo. El presupuesto se conserva al limpiar la lista y se puede cambiar o quitar cuando se quiera.
-  - **Descuento / precio temporal (v1.0.2):** al añadir un producto a la lista puedes indicar, opcionalmente, un descuento como porcentaje o como precio final; al llenar uno, el otro se calcula solo. Si el producto no tiene precio, solo se puede indicar el precio final. El precio temporal aplica únicamente a ese producto en la lista (no cambia el precio del catálogo) y se puede añadir, modificar o quitar después desde la lista de mercado, en ambas vistas. Los totales y el presupuesto usan el precio con descuento.
-- **Diseño (v1.0.3):** tema claro u oscuro según el sistema, tarjetas que se adaptan al ancho de la pantalla (vertical y horizontal), resumen de total y presupuesto con barra de progreso (verde dentro del presupuesto, roja al superarlo) y estados vacíos con ícono. La funcionalidad no cambia.
+## Tus datos
 
-## Descargar e instalar
+Todo se guarda en tu teléfono. La app ni siquiera tiene permiso para conectarse a internet.
 
-El APK firmado está en la sección [Releases](../../releases) de este repositorio. Descarga `ListaMercado.apk` desde *Assets*, ábrelo en el teléfono y, si Android lo pide, permite instalar apps de esa fuente. Si aparece un aviso de Play Protect, toca **Instalar de todos modos**.
+## Instalar
 
-Cada versión nueva se instala encima de la anterior y conserva los datos, siempre que esté firmada con el mismo keystore.
+Es solo para Android y no está en Google Play, así que se instala con el archivo APK.
 
-## Tecnología
+1. Entra a [Releases](../../releases) y descarga `ListaMercado.apk`.
+2. Ábrelo. Si Android lo pide, permite instalar apps de esa fuente.
+3. Si sale un aviso de Play Protect, toca *Instalar de todos modos*.
 
-- Flutter (Dart con null safety), solo Android, con Material 3 y un tema propio claro y oscuro.
-- Estado con `provider`; persistencia con `shared_preferences` (JSON).
-- Sin otras dependencias de producción.
-- Dev dependency: `flutter_launcher_icons`, solo para generar el ícono (`dart run flutter_launcher_icons`). No entra en el APK.
+Ese aviso aparece porque la app no viene de la tienda, no porque tenga algo raro.
 
-## Estructura
+Para actualizar, descarga el APK nuevo e instálalo encima: no pierdes nada. Si desinstalas la app, sí se borran tus datos, porque solo existen en tu teléfono.
 
-```
-lib/
-├── main.dart, app.dart, app_providers.dart
-├── models/      # Supermarket, Product, ShoppingItem (incluye el precio temporal)
-├── data/        # LocalStorage (shared_preferences)
-├── providers/   # SupermarketsProvider, ProductsProvider, ShoppingListProvider (incluye el presupuesto)
-├── logic/       # búsqueda, agrupación y totales (funciones puras)
-├── utils/       # parseo/formato de precios, cálculo de descuentos, normalización de texto
-├── screens/     # Productos, formulario, Supermercados, Lista
-└── widgets/     # diálogo de confirmación, selector de cantidad, campos de descuento, resumen de presupuesto, estados vacíos, vistas de lista y tabla
-assets/icon/     # imágenes fuente del ícono de la app
-test/            # espejo de lib/
-```
+## Novedades
 
-El detalle del diseño y del plan de implementación está en [`CLAUDE.md`](CLAUDE.md).
+- **1.0.3:** modo oscuro, tarjetas que se adaptan a la pantalla y barra de progreso del presupuesto.
+- **1.0.2:** descuentos por porcentaje o por precio final.
+- **1.0.1:** total general y presupuesto con restante.
 
-## Desarrollo
+## ¿Algo falla o te falta algo?
 
-```bash
-flutter pub get
-flutter run          # con un dispositivo o emulador Android conectado
-flutter analyze
-flutter test
-```
+Cuéntame en [Issues](../../issues).
 
-## Generar el APK release
-
-Antes de compilar una versión nueva, sube el número en `pubspec.yaml` (por ejemplo `1.0.3+4`). El número tras el `+` debe ser siempre mayor que el anterior, o Android rechazará la actualización.
-
-El APK se firma con un keystore propio que **no** está en el repositorio.
-
-1. Crea el keystore una sola vez (fuera del repo):
-
-   ```bash
-   keytool -genkey -v -keystore ~/lista-mercado.jks -keyalg RSA -keysize 2048 -validity 10000 -alias lista
-   ```
-
-2. Crea `android/key.properties` (está en `.gitignore`):
-
-   ```properties
-   storePassword=TU_CONTRASEÑA
-   keyPassword=TU_CONTRASEÑA
-   keyAlias=lista
-   storeFile=C:/Users/TU_USUARIO/lista-mercado.jks
-   ```
-
-   Usa `/` en la ruta, también en Windows.
-
-3. Compila:
-
-   ```bash
-   flutter build apk --release
-   ```
-
-   El resultado queda en `build/app/outputs/flutter-apk/app-release.apk`.
-
-4. Instala en un teléfono con depuración USB:
-
-   ```bash
-   adb install -r build/app/outputs/flutter-apk/app-release.apk
-   ```
-
-   Si ya hay una versión instalada con otra firma (por ejemplo, una debug), desinstálala antes con `adb uninstall com.listamercado.lista_mercado`.
-
-5. Para publicar, copia el APK como `ListaMercado.apk` y adjúntalo a un nuevo [release](../../releases/new) con una etiqueta como `v1.0.3`.
-
-> Guarda una copia del `.jks` y de su contraseña en un lugar seguro. Si se pierden, no se podrá actualizar la app instalada sin desinstalarla (y se borran sus datos locales).
-
-El APK release no declara el permiso `INTERNET`. Se puede comprobar con `aapt dump permissions` y la firma con `apksigner verify --print-certs`, ambos en `<Android SDK>/build-tools/<versión>/`.
-
-## Convenciones
-
-- Textos visibles en español; identificadores de código en inglés.
-- Ramas: `main` (solo versiones publicadas, con tag) y `develop` (integración); cada función se desarrolla en `feature/<nombre>` desde `develop`. Detalle y comandos en [`CLAUDE.md`](CLAUDE.md).
-- Un commit por tarea, con mensajes estilo `feat:` / `fix:` / `chore:`.
-- `dart format .` y `flutter analyze` limpios antes de cada commit.
-- No añadir dependencias ni funciones fuera del MVP sin actualizar `CLAUDE.md` primero.
+<sub>Si eres desarrollador, los detalles técnicos están en [`CLAUDE.md`](CLAUDE.md).</sub>

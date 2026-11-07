@@ -787,7 +787,68 @@ Entradas/condiciones que el spec implica pero no detalla; cada una tiene su test
 - [x] **Paso 8:** `adb install -r build/app/outputs/flutter-apk/app-release.apk` sobre la 1.0.2 y comprobar que los datos se conservan; recorrer la lista de humo completa en claro y oscuro, vertical y horizontal.
 - [x] **Paso 9:** Copiar el APK como `ListaMercado.apk` (sin commitearlo), crear el release `v1.0.3` en GitHub adjuntándolo y volver a `develop` (`git checkout develop && git merge main`).
 
----
+
+
+## Tecnología
+
+- Flutter (Dart con null safety), solo Android, con Material 3 y un tema propio claro y oscuro.
+- Estado con `provider`; persistencia con `shared_preferences` (JSON).
+- Sin otras dependencias de producción.
+- Dev dependency: `flutter_launcher_icons`, solo para generar el ícono (`dart run flutter_launcher_icons`). No entra en el APK.
+
+## Desarrollo
+
+```bash
+flutter pub get
+flutter run          # con un dispositivo o emulador Android conectado
+flutter analyze
+flutter test
+```
+
+## Generar el APK release
+
+Antes de compilar una versión nueva, sube el número en `pubspec.yaml` (por ejemplo `1.0.3+4`). El número tras el `+` debe ser siempre mayor que el anterior, o Android rechazará la actualización.
+
+El APK se firma con un keystore propio que **no** está en el repositorio.
+
+1. Crea el keystore una sola vez (fuera del repo):
+
+   ```bash
+   keytool -genkey -v -keystore ~/lista-mercado.jks -keyalg RSA -keysize 2048 -validity 10000 -alias lista
+   ```
+
+2. Crea `android/key.properties` (está en `.gitignore`):
+
+   ```properties
+   storePassword=TU_CONTRASEÑA
+   keyPassword=TU_CONTRASEÑA
+   keyAlias=lista
+   storeFile=C:/Users/TU_USUARIO/lista-mercado.jks
+   ```
+
+   Usa `/` en la ruta, también en Windows.
+
+3. Compila:
+
+   ```bash
+   flutter build apk --release
+   ```
+
+   El resultado queda en `build/app/outputs/flutter-apk/app-release.apk`.
+
+4. Instala en un teléfono con depuración USB:
+
+   ```bash
+   adb install -r build/app/outputs/flutter-apk/app-release.apk
+   ```
+
+   Si ya hay una versión instalada con otra firma (por ejemplo, una debug), desinstálala antes con `adb uninstall com.listamercado.lista_mercado`.
+
+5. Para publicar, copia el APK como `ListaMercado.apk` y adjúntalo a un nuevo release de GitHub con una etiqueta como `v1.0.3`.
+
+> Guarda una copia del `.jks` y de su contraseña en un lugar seguro. Si se pierden, no se podrá actualizar la app instalada sin desinstalarla (y se borran sus datos locales).
+
+El APK release no declara el permiso `INTERNET`. Se puede comprobar con `aapt dump permissions` y la firma con `apksigner verify --print-certs`, ambos en `<Android SDK>/build-tools/<versión>/`.
 
 ## Convenciones de trabajo
 
