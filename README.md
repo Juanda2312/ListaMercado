@@ -2,6 +2,34 @@
 
 App Android 100% local para organizar las compras del mercado: gestiona productos y supermercados, y arma una lista de compras con totales por supermercado. No usa internet ni cuentas; todo se guarda en el teléfono.
 
+## Flujo de uso
+
+### Primera vez
+
+1. **Crear supermercados:** en la pestaña *Supermercados*, añade los que uses.
+2. **Crear productos:** en la pestaña *Productos*, añade cada producto con su nombre y, si quieres, su supermercado y precio.
+3. **Armar la lista:** cuando vayas a hacer mercado, toca el carrito de cada producto para añadirlo a la lista con su cantidad (y un descuento, si aplica).
+   - *Opcional:* fija un presupuesto con el icono de cartera en la pestaña *Lista* para ver cuánto te queda mientras agregas productos.
+4. **En el mercado:** ve tachando los productos a medida que los encuentras.
+5. **Al terminar** (paso opcional):
+   - Usa *Limpiar lista* para empezar de cero la próxima vez, o
+   - Si tus compras suelen repetirse, usa *Tachar/Destachar todos* para destachar toda la lista y quita deslizando solo los productos que no necesites.
+
+### Flujo regular
+
+Los productos y supermercados ya existen, así que:
+
+1. **Armar la lista:** entra a la pestaña *Productos* y añade directamente a la lista los que necesites, con su cantidad (y un descuento, si aplica). Si tu lista anterior se parece a la de hoy, puedes reutilizarla destachándola.
+   - *Opcional:* fija o ajusta el presupuesto con el icono de cartera en la pestaña *Lista*.
+> Si encuentras un producto nuevo que no está en el catálogo, en cualquier momento puedes crearlo desde Productos y añadirlo a la lista.
+
+2. **En el mercado:** ve tachando los productos a medida que los encuentras.
+3. **Al terminar** (paso opcional):
+   - Usa *Limpiar lista* para empezar de cero la próxima vez, o
+   - Si tus compras suelen repetirse, usa *Tachar/Destachar todos* para destachar toda la lista y quita deslizando solo los productos que no necesites.
+
+> El presupuesto se conserva al limpiar la lista, así que no tienes que volver a ponerlo cada vez.
+
 ## Funciones
 
 - **Productos:** nombre (obligatorio), supermercado y precio (opcionales). Añadir, editar, eliminar, buscar (sin distinguir mayúsculas ni tildes) y filtrar por supermercado.
